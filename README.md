@@ -9,7 +9,7 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
      1.1 [Introduction](#intro)  
      1.2 [Kinematics ](#kinematics)   
      1.3 [Linearization ](#Linearization)   
-     1.4 [State Space Model](#STM)  
+     1.4 [State Space Model](#SPM)  
      1.5 [Laplace Transform](#LT)   
      1.6 [Stability analysis](#stability)   
     
@@ -36,18 +36,25 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
    
 
 <a name="Linearization"></a>
-##                                    Linearization
+##                                    Linearization  
+   <img src="Images/Linearization.JPG">
    
 
-<a name="bistable"></a>
-### Bistable clock
+<a name="SPM"></a>
+##                                    State Space Model
+   <img src="Images/STATE_SPACE_MODEL.JPG">
    
    
-<a name="selector"></a>
-### Clock Selector
+<a name="LT"></a>
+##                                     Laplace Transform
+   <img src="Images/LAPLACE1.JPG">
+   <img src="Images/LAPLACE2.JPG">
+   <img src="Images/LAPLACE3.JPG">
+   <img src="Images/LAPLACE4.JPG">
+
    
 
 <a name="memory"></a>
-### 2. Memory
+### 2. 
    
   

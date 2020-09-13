@@ -42,7 +42,7 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
 
 <a name="SPM"></a>
 ##                                    State Space Model
-   <img src="Images/STATE_SPACE_MODEL.JPG">
+   <img src="Images/SPM.JPG">
    
    
 <a name="LT"></a>

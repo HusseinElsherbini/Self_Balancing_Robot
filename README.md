@@ -29,7 +29,7 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
    
 <a name="kinematics"></a>
 ##                                      KINEMATICS
-   <img src="Images/KINEM1.JPG">
+   <img src="Images/KINEMATICS1.JPG">
    <img src="Images/KINEM2.JPG">
    <img src="Images/KINEMATICS4.JPG">
    <img src="Images/KINEMATICS5.JPG">

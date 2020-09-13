@@ -50,7 +50,7 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
    <img src="Images/LAPLACE1.JPG">
    <img src="Images/LAPLACE2.JPG">
    <img src="Images/LAPLACE3.JPG">
-   <img src="Images/LAPLACE4.JPG">
+   <img src="Images/LT4.JPG">
 
    
 

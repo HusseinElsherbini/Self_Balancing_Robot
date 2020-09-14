@@ -12,7 +12,7 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
      1.4 [State Space Model](#SPM)  
      1.5 [Laplace Transform](#LT)   
      1.6 [Open Loop Stability analysis](#stability)   
-     1.7 [](#stability) 
+     1.7 [FeedBack Controller Design](#pid)   
     
 2. [ Application ](#App)  
      2.1 [ ](#RAM)  
@@ -55,9 +55,13 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
 
    
 
-<a name="memory"></a>
+<a name="stability"></a>
 ##                                    Open Loop Stability Analysis 
   
    <img src="Images/OPEN_LOOP_RESPONSE2.JPG">
    <img src="Images/OPEN_LOOP_RESPONSE.JPG">
   
+<a name="pid"></a>
+##                                    Feedback Controller
+  
+ 

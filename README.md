@@ -58,5 +58,6 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
 <a name="memory"></a>
 ##                                    Open Loop Stability Analysis 
   
+   <img src="Images/OPEN_LOOP_RESPONSE2.JPG">
    <img src="Images/OPEN_LOOP_RESPONSE.JPG">
   

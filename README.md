@@ -61,10 +61,13 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
 <a name="stability"></a>
 ##                                    Open Loop Stability Analysis 
   
-   <img src="Images/OPEN_LOOP_RESPONSE2.JPG">
-   <img src="Images/OPEN_LOOP_RESPONSE.JPG">
+   <img src="Images/PZMAP.JPG"> 
+   <img src="Images/impulse_response.JPG">
+   
   
 <a name="pid"></a>
 ##                                    Feedback Controller
+   <img src="Images/PID1.JPG"> 
+   <img src="Images/PID2.JPG">
   
  

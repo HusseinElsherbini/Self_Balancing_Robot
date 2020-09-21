@@ -25,15 +25,18 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
 <a name="desc"></a>
 <a name="intro"></a>
 ##                                     INTRODUCTION  
-   <img src="Images/INTRODUCTION1.JPG">  
-   <img src="Images/INTROUDCTION2.JPG">   
+   <img src="Images/intro_1.JPG">  
+   <img src="Images/intro_2.JPG">   
    
 <a name="kinematics"></a>
 ##                                      KINEMATICS
-   <img src="Images/KINEMATICS1.JPG">
-   <img src="Images/KINEM2.JPG">
-   <img src="Images/KINEMATICS4.JPG">
-   <img src="Images/KINEMATICS5.JPG">
+   <img src="Images/kinematics_1.JPG">
+   <img src="Images/kinematics_2.JPG">
+   <img src="Images/kinematics_3.JPG">
+   <img src="Images/kinematics_4.JPG"> 
+   <img src="Images/kinematics_5.JPG">
+   <img src="Images/kinematics_6.JPG">
+   <img src="Images/kinematics_7.JPG">
    
 
 <a name="Linearization"></a>
@@ -43,7 +46,7 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
 
 <a name="SPM"></a>
 ##                                    State Space Model
-   <img src="Images/SPM1.JPG">
+   <img src="Images/SSM.JPG">
    
    
 <a name="LT"></a>

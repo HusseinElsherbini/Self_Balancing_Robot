@@ -15,8 +15,10 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
      1.7 [FeedBack Controller Design](#pid)   
     
 2. [ Application ](#App)  
-     2.1 [ ](#RAM)  
-     2.2 [](#MAR)  
+     2.1 [Hardware](#HW)
+        2.11 [Hardware Requirements](#HWREQS)
+        2.12 [PCB Design](#HWREQS)
+     2.2 [Software](#SW)  
      2.3 [](#IR)  
      2.4 [](#RegisterA)   
      2.5 [](#micro)  
@@ -69,5 +71,12 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
 ##                                    Feedback Controller
    <img src="Images/PID1.JPG"> 
    <img src="Images/PID2.JPG">
+
+
+<a name="App"></a>
+<a name="HW"></a>
+##                                    Hardware Requirements
+
+
   
  

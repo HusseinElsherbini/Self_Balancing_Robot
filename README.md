@@ -75,8 +75,8 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
 
 <a name="App"></a>
 <a name="HW"></a>
-##                                    Hardware Requirements
+###                                   Hardware Requirements
 
-
+This section discusses the hardware design for this project.  I decided to use an Stm32F4 microcontroller more specifically the [STM32F401RCT6]([https://www.genome.gov/](https://www.st.com/en/microcontrollers-microprocessors/stm32f401rc.html)https://www.st.com/en/microcontrollers-microprocessors/stm32f401rc.html). This micrcontroller is based on an Arm Cortext M4 32-bit core that can operate at 84 MHz, which is much more processing power than we need. It also features an FPU which is usefull for the floating point arithmetic that is done in the firmware. With regards to memory, this MCU contains up to 256KB of flash memory and 64KB of SRAM. 
   
  

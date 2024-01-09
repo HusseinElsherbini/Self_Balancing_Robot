@@ -80,12 +80,12 @@ This Project explores the theory behind the control of a 2 wheeled self balancin
 This section discusses the hardware design for this project.  I decided to use an Stm32F4 microcontroller more specifically the [STM32F401RCT6]([https://www.genome.gov/](https://www.st.com/en/microcontrollers-microprocessors/stm32f401rc.html)https://www.st.com/en/microcontrollers-microprocessors/stm32f401rc.html). This micrcontroller is based on an Arm Cortext M4 32-bit core that can operate at 84 MHz, which is much more processing power than we need. It also features an FPU which is usefull for the floating point arithmetic that is done in the firmware. With regards to memory, this MCU contains up to 256KB of flash memory and 64KB of SRAM. 
 ## Power Supply Requirements
 Different components demand unique power requirements. In this step I listed all the different parts I used alongside their power needs.
-|            | Max current        | Avg current       |             |
-|  Part      | consumption (mA)   | consumption (mA)  | Voltage (V) | 
+
+|  Part      | Max Current (mA)   | Avg Current (mA)  | Voltage (V) | 
 | :--------: | :----------------: | :---------------: | :---------: |
 | Stm32F4    | 7                  | 5.7               | 3.3         |
 | Mpu-6050   | 3.9                |                   | 3.3         |
 | Motors     | 1200               | 170               | 12          |
 | nrf24lo1   | 13.5               | 11.3              | 3.3         |
 
-
+As shown in the table, the largest power consumer were the motors which require 12 volts and 1.2 amps of current. It is important to note that I needed to meet 3 different voltage levels, 12, 5 and 3.3, which meant I needed to implement a combination of step-down voltage regulators. One voltage regulator to step down the input voltage from 12V to 5V and another to step down from 5V to 3.3V.

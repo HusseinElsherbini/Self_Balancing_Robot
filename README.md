@@ -101,3 +101,4 @@ Peripherals and I/O are the way microcontrollers interact and communicate with t
 In order to communicate with the MPU6050 I used I2C. It’s a synchronous serial communication protocol, it requires two wires, an SCL line (clock) and an SDA line (data). Both lines also require two pull up resistors as shown in the schematic below:
 <img src="Images/I2C_Schematic.jpg">
 To communicate with the nRF24l01 (Transceiver) i used the SPI protocol. SPI requires 4 wires, MISO (Master in slave out), MOSI (Master out slave in), SCK (clock line), CS (chip select), EN (enable line) and an option interrupt line. SPI is also a synchronous communication protocl, meaning the data is synchronized to the rising or falling edge of a clock. 
+<img src="Images/SBR_NRF_SCHEM.JPG">

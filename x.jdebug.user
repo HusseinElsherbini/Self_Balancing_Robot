@@ -1,0 +1,117 @@
+
+
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/i2c.c:76:9, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/i2c.c:78, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/i2c.c:189:18, Permitted Impl.=BP_TYPE_MIXED, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/i2c.c:285:9, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:57, State=BP_STATE_ON
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:75, State=BP_STATE_ON
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:89, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:93:13, State=BP_STATE_ON
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:97:9, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:101, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:104:9, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:106:12, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:108:18, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:111:44, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:114:12, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:120:22, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:123:44, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:125:12, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:146:13, State=BP_STATE_ON
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:180:72, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:186:13, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:225:88, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:229:5, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:241:57, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:253:1, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:284:13, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:319:13, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:346:5, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:369:5, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:398:57, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:410:13, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:418:7, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:439:11, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:448:7, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:473:44, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:536:5, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:545:5, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c:584:5, State=BP_STATE_ON
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/pwm.c:45:31, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/task_scheduler.c:64:6, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/task_scheduler.c:81:29, Permitted Impl.=BP_TYPE_MIXED, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/main.c:77:3, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/main.c:88:1, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/main.c:175:12, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/main.c:186:40, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/main.c:214:2, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/rotary_encoder.c:42, State=BP_STATE_DISABLED
+Breakpoint=C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/rotary_encoder.c:47:27, State=BP_STATE_DISABLED
+OpenDocument="imu.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/imu.c", Line=61
+OpenDocument="pwm.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/pwm.c", Line=21
+OpenDocument="cortex.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/cortex.c", Line=0
+OpenDocument="rotary_encoder.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/rotary_encoder.c", Line=0
+OpenDocument="main.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/main.c", Line=0
+OpenDocument="i2c.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/i2c.c", Line=132
+OpenDocument="sw_init.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/sw_init.c", Line=0
+OpenDocument="imu.h", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/inc/imu.h", Line=127
+OpenDocument="gpio.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/gpio.c", Line=0
+OpenDocument="platform.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/platform.c", Line=39
+OpenDocument="stm32_startup.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/startup/stm32_startup.c", Line=178
+OpenDocument="task_scheduler.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/task_scheduler.c", Line=39
+OpenDocument="cortex.h", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/inc/cortex.h", Line=0
+OpenDocument="timer.c", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/src/timer.c", Line=37
+OpenDocument="main.h", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/inc/main.h", Line=0
+OpenDocument="x.jdebug", FilePath="C:/Users/Hae14/Desktop/CORTEX PROGRAMMING SC/StandaloneBuild/x.jdebug", Line=0
+OpenToolbar="Debug", Floating=0, x=0, y=0
+OpenWindow="Call Stack", DockArea=RIGHT, x=0, y=2, w=546, h=101, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=0, w=546, h=262, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
+OpenWindow="Source Files", DockArea=LEFT, x=0, y=2, w=577, h=126, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=3, w=546, h=99, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Break & Tracepoints", DockArea=LEFT, x=0, y=1, w=577, h=171, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, VectorCatchIndexMask=254
+OpenWindow="Memory 1", DockArea=BOTTOM, x=0, y=0, w=509, h=384, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x2000FF4C
+OpenWindow="Local Data", DockArea=RIGHT, x=0, y=1, w=546, h=252, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Watched Data 1", DockArea=LEFT, x=0, y=0, w=577, h=337, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=3, w=577, h=183, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Console", DockArea=BOTTOM, x=4, y=0, w=221, h=384, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Memory 2", DockArea=BOTTOM, x=1, y=0, w=499, h=384, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=1, EditorAddress=0x2000FAC8
+OpenWindow="Memory 3", DockArea=BOTTOM, x=2, y=0, w=520, h=384, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x2000F710
+OpenWindow="Memory 4", DockArea=BOTTOM, x=3, y=0, w=505, h=384, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x2000EF20
+OpenWindow="Memory 5", DockArea=RIGHT, x=0, y=4, w=546, h=102, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x2000EB9C
+SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
+TableHeader="Vector Catches", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Vector Catch";"Description"], ColWidths=[50;300;500]
+TableHeader="Break & Tracepoints", SortCol="", SortOrder="ASCENDING", VisibleCols=["";"Type";"Location";"Extras"], ColWidths=[100;100;100;962]
+TableHeader="Local Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type";"Scope"], ColWidths=[100;100;100;100;112;100]
+TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[552;100;100;100;458]
+TableHeader="Call Stack", SortCol="Function", SortOrder="ASCENDING", VisibleCols=["Function";"Stack Frame";"Source";"PC";"Return Address";"Stack Used"], ColWidths=[148;159;596;100;168;100]
+TableHeader="Source Files", SortCol="File", SortOrder="ASCENDING", VisibleCols=["File";"Status";"Size";"#Insts";"Path"], ColWidths=[132;100;100;100;698]
+TableHeader="Power Sampling", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
+TableHeader="Registers 1", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Description"], ColWidths=[233;200;224]
+TableHeader="Watched Data 1", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Location";"Refresh"], ColWidths=[217;548;100;100]
+TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
+WatchedExpression="userTask", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="bank", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="address", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="cortex_pp", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="cortexPperiphs", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="RCC_REGS", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="i2c_config", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="i2c1", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="SR1", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="i2c_sr1", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="step", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="stack_frame", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="gTickCount", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="mpu6050_raw_data", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="current_task", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="data", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="global_timers", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="data", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="i2c_step", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="i2c_tr", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="yellow_led", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="progBuff", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="verifyBuff", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="psp", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1
+WatchedExpression="pwmA", DisplayFormat=DISPLAY_FORMAT_HEX, Window=Watched Data 1

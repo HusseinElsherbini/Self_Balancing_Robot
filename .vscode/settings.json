@@ -1,0 +1,26 @@
+{
+  "files.associations": {
+    "led.h": "c",
+    "task_scheduler.h": "c",
+    "stdint.h": "c",
+    "type_traits": "c",
+    "xmemory": "c",
+    "cortex.h": "c",
+    "platform.h": "c",
+    "main.h": "c",
+    "bit": "c",
+    "compare": "c",
+    "cstddef": "c",
+    "limits": "c",
+    "xutility": "c",
+    "imu.h": "c",
+    "stdbool.h": "c",
+    "i2c.h": "c",
+    "rotary_encoder.h": "c",
+    "gpio.h": "c",
+    "pwm.h": "c",
+    "pwm_common.h": "c",
+    "timer_common.h": "c",
+    "cstdlib": "c"
+  }
+}

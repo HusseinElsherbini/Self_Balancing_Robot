@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include "math.h"
 #include "stdbool.h"
-#include "task_scheduler.h"
 
 // processor fault macros
 #define USGFAULTENABLE 18
@@ -53,7 +52,7 @@ extern stack_frame_t stack_frame;
 #define NVIC_ENABLE_IRQ(IRQn)        (*(cortexPperiphs.pISER[(int)(ceil((double)(IRQn/32)))]) |= ((uint32_t)(1 << (IRQn % 32))))
 void enable_configurable_sys_faults(void);
 void init_systick_timer(uint32_t tick_hz);
-void taskStackTraceDepth(TCB_t * userTask);
+
 
 
 #endif /*CORTEX_H_*/

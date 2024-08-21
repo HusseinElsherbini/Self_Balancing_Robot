@@ -1,6 +1,6 @@
 ﻿#ifndef I2C_H_
 #define I2C_H_
-#include "main.h"
+//#include "main.h"
 #include "stdint.h"
 #include "platform.h"
 #include "stdbool.h"

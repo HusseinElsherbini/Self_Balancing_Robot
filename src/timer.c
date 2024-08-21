@@ -1,5 +1,5 @@
 ﻿#include "timer_common.h"
-#include "main.h"
+//#include "main.h"
 
 
 void setup_timer_mode(TIMER_CONFIG_T * timerConfig){

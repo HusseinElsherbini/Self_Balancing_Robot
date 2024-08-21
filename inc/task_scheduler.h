@@ -59,5 +59,8 @@ void save_psp_value(uint32_t current_psp_value);
 void update_next_task(void);
 void unblock_tasks(void);
 void lock_task(uint8_t task_num);
+void taskStackTraceDepth(TCB_t * userTask);
+__attribute__((naked)) void switch_sp_to_psp(void);
+__attribute__((naked)) void init_schedulaer_stack(uint32_t sched_stack_start);
 
 #endif /* TASK_SCHEDULER_H_ */

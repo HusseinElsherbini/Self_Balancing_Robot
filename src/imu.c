@@ -299,7 +299,7 @@ uint16_t readFifoByteCount(volatile I2C_t *i2cx, bool blocking){
     uint8_t data[2] = {0};
     i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_FIFO_COUNT_H, &data, 2, blocking);
 
-    return (uint16_t)(data[0] << 8 | data[1]);
+    return (uint16_t)((uint16_t)data[1] << 8 | data[0]);
 }
 
 void resetFifo(volatile I2C_t *i2cx, uint8_t enable , bool blocking){
@@ -346,6 +346,55 @@ bool getIntStatus(volatile I2C_t *i2cx, uint8_t enable , bool blocking){
     uint8_t data = 0;
     i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)MPU6050_RA_INT_STATUS, &data, 1, blocking);
     return (bool)(data & ~(1 << 0));
+}
+void readFifoBytes(volatile I2C_t *i2cx, uint8_t *data, uint16_t byteCount, bool blocking){
+
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_FIFO, &data, byteCount, blocking);
+}
+
+bool getDMPpacket(volatile I2C_t *i2cx, uint8_t *data, uint8_t packetSize, bool blocking){
+
+    int16_t fifoCount;
+    bool packetReceived = false;
+
+    // check dmp fifo count 
+    if(fifoCount = readFifoByteCount(i2cx, true) > packetSize){
+
+        // if the buffer contains more than 200 bytes, it is faster to just reset the buffer and wait for next packet
+        if(fifoCount > 200){
+            resetFifo(i2cx, true, true);
+            fifoCount = 0;
+            return packetReceived;
+        }
+        // if less than 200 but more than 1, remove all bytes except latest packet
+        else{
+            uint8_t trash[DMP_PACKET_SIZE];
+            uint16_t throwawayBytes;
+            while((fifoCount = readFifoByteCount(i2cx, true)) > packetSize){
+
+                fifoCount = fifoCount - packetSize;
+                while(fifoCount){
+
+                    if(fifoCount < packetSize){
+                        throwawayBytes = packetSize;
+                    }
+                    else{
+                        throwawayBytes = fifoCount;
+                    }
+                    readFifoBytes(i2cx, &trash, throwawayBytes, true);
+                    fifoCount -= throwawayBytes;
+                }
+            } 
+        }
+    }
+    // if there is no packet received, return false
+    packetReceived = fifoCount == packetSize;
+    if(!packetReceived){
+        return false;
+    }
+    i2cx->data_requested = true;
+    readFifoBytes(i2cx, data, packetSize, false);
+    return packetReceived;
 }
 
 void fullIMUReset(volatile I2C_t *i2cx, bool blocking){
@@ -536,6 +585,22 @@ bool writeDMPfw(volatile I2C_t *i2cx){
     return writeMemBlock(i2cx, &dmpMemory, MPU6050_DMP_CODE_SIZE, 0, 0, true, true, true);
 }
 
+void read_mpu_config(volatile I2C_t *i2cx){
+
+    uint8_t data; 
+    // read all configuration registers
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_PWR_MGMT_1, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_USER_CTRL, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_INTR_EN, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_FIFO_CFG, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_A_CFG, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)MPU6050_RA_INT_PIN_BYPASS, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_SAMPLE_RATE_DIV, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_DLFP_CFG, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)MPU6050_RA_DMP_CFG_1, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_G_CFG, &data, 1, true);
+
+}
 void imu_init(volatile I2C_t *i2cx){
 
     uint8_t data = 0;
@@ -591,13 +656,10 @@ void imu_init(volatile I2C_t *i2cx){
     // enable dmp int
     enableDmpInt(i2cx, true, true);
     
-    // disable dmp initially 
-    enableDMP(i2cx, false, true);
-
     setAccConfig(i2cx, A_CFG_2G, true);
     readAccConfig(i2cx, true);
 
-    // read acc/gyro config
+    // read gyro config
     readGyroConfig(i2cx,true);
 
     // run calibration routine
@@ -613,11 +675,11 @@ void imu_init(volatile I2C_t *i2cx){
     setAccYoffset(i2cx, mpu6050_offsets.ay_offset, true);
     setAccZoffset(i2cx, mpu6050_offsets.az_offset, true);
 
-    while(1){
-        get_raw_measurements(i2cx ,true);
-    }
+    // disable dmp initially 
+    enableDMP(i2cx, true, true);
     asm("nop");
 
+    read_mpu_config(i2cx);
     return 0; // success
 
 }

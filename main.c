@@ -25,7 +25,7 @@ int main(void)
 
 	pwmSetDutyCycle(&pwmA, (float)50.0);
 	pwmSetDutyCycle(&pwmB, (float)50.0);
-
+	
 	switch_sp_to_psp();	
 
 	// start scheduler context switching 
@@ -44,9 +44,11 @@ void task1_handler(void)
 	while(1){
 
 		led_on(&yellow_led);
-		get_raw_measurements(&i2c1, false);
+		// check if new packet received
+		while(!getDMPpacket(&i2c1, &mpu6050_raw_data.raw_data, DMP_PACKET_SIZE, false));
+		//get_raw_measurements(&i2c1, false);
 		lock_task(IMU_RETRIEVE_RAW_DATA);
-		process_raw_measurements();
+		//process_raw_measurements();
 		led_off(&yellow_led);
 		task_delay(DELAY_COUNT_1MS*5U, (uint8_t)UNLOCKED);
 		

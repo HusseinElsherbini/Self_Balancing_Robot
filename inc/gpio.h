@@ -2,7 +2,6 @@
 #define GPIO_H_
 
 #include "platform.h"
-#include "gpio.h"
 #include "stdint.h"
 
 #define GPIO_INPUT_MODE               (0)

@@ -54,22 +54,4 @@ void enable_configurable_sys_faults(void){
 
 }
 
-void taskStackTraceDepth(TCB_t * userTask){
 
-	uint32_t *psp = userTask->taskStackStartAddress;
-	uint32_t byteCount = 0;
-	// calculate maximum number of bytes task used 
-	while(psp != (userTask->taskStackStartAddress - TASK_STACK_SIZE)){
-		psp--;
-		if(*psp == 0xF3F4F5F6 ){
-			if(byteCount > userTask->maxStackSpaceUsed){
-				userTask->maxStackSpaceUsed = byteCount;
-			}
-			break;
-		}
-		else{
-			byteCount += 4;
-		}
-
-	}
-}

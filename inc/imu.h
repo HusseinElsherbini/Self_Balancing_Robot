@@ -4,7 +4,6 @@
 #include "platform.h"
 #include <stdint.h>
 #include "i2c.h"
-#include "main.h"
 #include <stdbool.h>
 #include <ctype.h>
 #include "task_scheduler.h"
@@ -176,18 +175,31 @@ extern mpu6050_offset_data_t mpu6050_offsets;
 
 #define PLL_CLKSRC_GYRO_X       0x1
 #define PLL_CLKSRC_GYRO_Z       0x3
+#define DMP_PACKET_SIZE         28
 
+/* ================================================================ *
+ | Default MotionApps v6.12 28-byte FIFO packet structure:           |
+ |                                                                  |
+ | [QUAT W][      ][QUAT X][      ][QUAT Y][      ][QUAT Z][      ] |
+ |   0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  |
+ |                                                                  |
+ | [GYRO X][GYRO Y][GYRO Z][ACC X ][ACC Y ][ACC Z ]					|
+ |  16  17  18  19  20  21  22  23  24  25  26  27					|
+ * ================================================================ */
 // Structure containing interesting sensor data
 typedef union {
-    uint8_t raw_data[14];
+    uint8_t raw_data[28];
     struct{
-        int16_t ax;
-        int16_t ay;
-        int16_t az;
-        int16_t temp;
+        int32_t quat_w;
+        int32_t quat_x;
+        int32_t quat_y;
+        int32_t quat_z;
         int16_t gx;
         int16_t gy;
         int16_t gz;
+        int16_t ax;
+        int16_t ay;
+        int16_t az;
     };
 } mpu6050_data_t;
 
@@ -238,7 +250,10 @@ void readGyroConfig(volatile I2C_t *i2cx, bool blocking);
 void readAccConfig(volatile I2C_t *i2cx, bool blocking);
 void setAccConfig(volatile I2C_t *i2cx, uint8_t config, bool blocking);
 void sensorMeanMeasurements(volatile I2C_t *i2cx, long *mean_ax, long *mean_ay, long *mean_az, long *mean_gx, long *mean_gy, long *mean_gz);
-uint16_t readFifoByteCount(volatile I2C_t *i2cx, bool blocking));
+uint16_t readFifoByteCount(volatile I2C_t *i2cx, bool blocking);
+void readFifoBytes(volatile I2C_t *i2cx, uint8_t *data, uint16_t byteCount, bool blocking);
+bool getDMPpacket(volatile I2C_t *i2cx, uint8_t *data, uint8_t packetSize, bool blocking);
+void read_mpu_config(volatile I2C_t *i2cx);
 
 static const unsigned char dmpMemory[MPU6050_DMP_CODE_SIZE] __attribute__((section(".imu_dmp_fw"))) = {
   /* bank # 0 */

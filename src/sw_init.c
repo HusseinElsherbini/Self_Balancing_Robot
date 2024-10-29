@@ -6,6 +6,7 @@
 #include "imu.h"
 #include "rotary_encoder.h"
 #include "pwm_common.h"
+#include "spi.h"
 
 void sw_hw_init(void){
 
@@ -15,10 +16,11 @@ void sw_hw_init(void){
     led_init(&yellow_led);
     led_init(&red_led);
     led_init(&blue_led);
-    reEncoderInit(&rEncoder);
+    //reEncoderInit(&rEncoder);
     pwmInit(&pwmA);
     pwmInit(&pwmB);
     i2cInit();
-    imu_init(&i2c1);      
+    imu_init(&i2c1);     
+    spi_init(&spiHandle1);
     
 }

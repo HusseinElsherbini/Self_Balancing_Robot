@@ -44,6 +44,23 @@ typedef struct
 
 extern TCB_t user_tasks[MAX_TASKS];
 
+#define _LOCK(__HANDLE__)                                           \
+							do{                                        \
+								if((__HANDLE__)->Lock == LOCKED)   \
+								{                                      \
+									return SYS_BUSY;                    \
+								}                                      \
+								else                                   \
+								{                                      \
+									(__HANDLE__)->Lock = LOCKED;    \
+								}                                      \
+								}while (0U)
+
+#define _UNLOCK(__HANDLE__)                                          \
+								do{                                       \
+									(__HANDLE__)->Lock = UNLOCKED;    \
+								}while (0U)
+
 void task1_handler(void);
 void task2_handler(void);
 void task3_handler(void);
@@ -54,6 +71,7 @@ void init_tasks_stack(void);
 void task_delay(uint32_t tick_no, uint8_t lock_state);
 void schedule(void);
 void update_global_tick_count(void);
+uint32_t get_global_tick_count(void);
 uint32_t get_psp_value(void);
 void save_psp_value(uint32_t current_psp_value);
 void update_next_task(void);

@@ -19,7 +19,11 @@
 #include "i2c.h"
 #include "imu.h"
 #include "pwm_common.h"
+#include "kalman_filter.h"
+#include "spi.h"
+#include "aux_board_communication.h"
 
 void sw_hw_init(void);
+void Error_Handler(void);
 
 #endif /* MAIN_H_ */

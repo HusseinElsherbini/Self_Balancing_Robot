@@ -9,13 +9,14 @@ global_timers_t global_timers = {
 	.timers            = {0}
 };
 
+
 int main(void)
 {
 	initialise_monitor_handles();
 
 	printf("Implementation of a task scheduler\n");
 
-	//DISABLE_WB();
+	DISABLE_WB();
 
 	init_schedulaer_stack(SCHED_STACK_START);
 
@@ -44,11 +45,9 @@ void task1_handler(void)
 	while(1){
 
 		led_on(&yellow_led);
-		// check if new packet received
-		while(!getDMPpacket(&i2c1, &mpu6050_raw_data.raw_data, DMP_PACKET_SIZE, false));
 		//get_raw_measurements(&i2c1, false);
 		lock_task(IMU_RETRIEVE_RAW_DATA);
-		//process_raw_measurements();
+		//process_raw_measurements(&mpu6050_data);
 		led_off(&yellow_led);
 		task_delay(DELAY_COUNT_1MS*5U, (uint8_t)UNLOCKED);
 		
@@ -57,6 +56,8 @@ void task1_handler(void)
 void task2_handler(void)
 {
 	while(1){
+		
+		requestRadioControlData(&spiHandle1);
 		led_on(&blue_led);
 		task_delay(DELAY_COUNT_500MS, (uint8_t)UNLOCKED);
 		led_off(&blue_led);
@@ -142,10 +143,12 @@ void SysTick_Handler(void){
 			global_timers.timer_flags.timer[i] = EXPIRED;	
 		}
 	}
+	// update global tick count
+	update_global_tick_count();
+	
 	// only run schedular if flag is set
 	if(sysFlags.startScheduler == true){
-		// update global tick count
-		update_global_tick_count();
+		
 
 		// unblock tasks that can run
 		unblock_tasks();
@@ -225,5 +228,15 @@ void HardFault_Handler_c(uint32_t *pMSP){
 	}
 
 	__asm("nop");
+
+}
+
+void Error_Handler(void)
+{
+
+  __disable_irq();
+  while (1)
+  {
+  }
 
 }

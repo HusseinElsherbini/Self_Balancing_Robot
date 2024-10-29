@@ -234,7 +234,7 @@ void I2C1_ER_IRQHandler(void){
 void i2cInit(void){
 
     
-    /* enable apb1 bus clock access ot I2C1 and AHB1 to GPIOB */
+    /* enable apb1 bus clock access to I2C1 and AHB1 to GPIOB */
     SET_BIT(RCC_REGS->RCC_APB1ENR, I2C1_APB1EN);
     SET_BIT(RCC_REGS->RCC_AHB1ENR, GPIOB_EN);
 
@@ -330,8 +330,8 @@ void i2cInit(void){
     i2c_step+=1;
     reg = i2c1.i2c_regs->I2C_SR2; */
     /* enable EV and ER irq nvic lines */
-    NVIC_ENABLE_IRQ((uint32_t)I2C1_EV_IRQn);
+    __NVIC_EnableIRQ((uint32_t)I2C1_EV_IRQn);
     
-    NVIC_ENABLE_IRQ((uint32_t)I2C1_ER_IRQn);
+    __NVIC_EnableIRQ((uint32_t)I2C1_ER_IRQn);
 
 }

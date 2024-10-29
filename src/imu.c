@@ -1,34 +1,83 @@
 ﻿#include "imu.h"
+#include <math.h>
+#include "kalman_filter.h"
 
 
-mpu6050_data_t mpu6050_raw_data = {
+mpu6050_data_t mpu6050_data = {
 
-    .raw_data = {0}
+    .rawData.raw_data = {0},
+    .processedData.processed_data = {0.0f},
+    .filteredData.filtered_data = (0.0f)
 };
 
 mpu6050_offset_data_t mpu6050_offsets = {
 
-    .ax_offset = 0xEF6D,
-    .ay_offset = 0x08BE,
-    .az_offset = 0x0366,
-    .xg_offset = 0x003F,
-    .yg_offset = 0xFFDD,
-    .zg_offset = 0x0027,
+    .ax_offset = 0xEF79,
+    .ay_offset = 0x08C9,
+    .az_offset = 0x0325,
+    .xg_offset = 0x003A,
+    .yg_offset = 0xFFDE,
+    .zg_offset = 0x0022,
 };
 
+mpu6050_config_t mpu6050_config = {
+
+    .power_management_1.CLKSEL       = PLL_CLKSRC_GYRO_X,  // set clock source to the GYRO x PLL
+    .configurationRegs[INT_ENABLE]   = 0x0,                // all interrupts off 
+    .configurationRegs[FIFO_CFG]     = 0x0,                // all fifo sources to zero, using DMP fifo
+    .acc_cfg.afs_select              = A_CFG_2G,           // accelerometer sensitivity to +-2g
+    .interrupt_pin_cfg.int_level     = 0x1,                // logic level for interrupt pin to active low
+    .interrupt_pin_cfg.int_rd_clear  = 0x1,                // interrupt status bit is cleared on any read
+    .dlpf_cfg.dlpf_config            = DLFP_CFG_FILTER_1,  // digital low pass filter is set to 184hz for acc and 188hz for gyro
+    .user_control.fifo_enable        = 0x1,                // enable fifo 
+    .user_control.dmp_maybe          = 0x1,                 
+    .dmp_config_1.dmp_prg_start_addr = 0x04,               // dmp program start address
+    .sample_rate_div.sample_rate_div = 0x0,                // sample rate = Gyro output / (1 + SMPLRATE_DIV)
+
+};
 void get_raw_measurements(volatile I2C_t *i2cx ,bool blocking){
 
     i2cx->data_requested = true;
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_AX_H, &mpu6050_raw_data.raw_data, 14, blocking);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_AX_H, &mpu6050_data.rawData.raw_data, 14, blocking);
 
 }
-void process_raw_measurements(void){
+void process_raw_measurements(mpu6050_data_t *mpu6050_data){
     // reorder data 
     uint8_t temp = 0;
-    for(int i = 0; i < (sizeof(mpu6050_raw_data.raw_data)/sizeof(mpu6050_raw_data.raw_data[0])); i+=2){
-        temp = mpu6050_raw_data.raw_data[i + 1];
-        mpu6050_raw_data.raw_data[i + 1] = mpu6050_raw_data.raw_data[i];
-        mpu6050_raw_data.raw_data[i] = temp;
+    for(int i = 0; i < (sizeof(mpu6050_data->rawData.raw_data)/sizeof(mpu6050_data->rawData.raw_data[0])); i+=2){
+        temp = mpu6050_data->rawData.raw_data[i + 1];
+        mpu6050_data->rawData.raw_data[i + 1] = mpu6050_data->rawData.raw_data[i];
+        mpu6050_data->rawData.raw_data[i] = temp;
+    }
+
+}
+
+void convert_raw_data_to_angle(mpu6050_data_t *mpu6050_data, float timeStep){
+
+    // turn raw measurements into angles and angular_velocity 
+    mpu6050_data->processedData.processedData.angular_velocity = (float)(mpu6050_data->rawData.rawData.gx/131.0f);
+    mpu6050_data->processedData.processedData.acc_angle_x = (180/3.141592) * atan(mpu6050_data->rawData.rawData.ax / sqrt(pow(mpu6050_data->rawData.rawData.ay, 2) + pow(mpu6050_data->rawData.rawData.az, 2))); 
+    mpu6050_data->processedData.processedData.gyro_angle_x = mpu6050_data->processedData.processedData.gyro_angle_x + (float)((timeStep/1000.00f)*mpu6050_data->processedData.processedData.angular_velocity);
+    mpu6050_data->processedData.processedData.angle = (float)(0.04*mpu6050_data->processedData.processedData.gyro_angle_x + 0.96*mpu6050_data->processedData.processedData.acc_angle_x);
+
+}
+
+void process_dmp_packet(mpu6050_dmp_data_t *mpu6050_dmp_data){
+    // reorder data 
+    uint8_t temp = 0;
+
+    for(int i = 0; i < 16; i+=4){
+        temp = mpu6050_dmp_data->raw_data[i + 3];
+        mpu6050_dmp_data->raw_data[i + 3] = mpu6050_dmp_data->raw_data[i];
+        mpu6050_dmp_data->raw_data[i] = temp;
+        temp = mpu6050_dmp_data->raw_data[i + 1];
+        mpu6050_dmp_data->raw_data[i + 1] = mpu6050_dmp_data->raw_data[i];
+        mpu6050_dmp_data->raw_data[i] = temp;
+    }
+    for(int i = 16; i < DMP_PACKET_SIZE; i+=2){
+        temp = mpu6050_dmp_data->raw_data[i + 1];
+        mpu6050_dmp_data->raw_data[i + 1] = mpu6050_dmp_data->raw_data[i];
+        mpu6050_dmp_data->raw_data[i] = temp;
     }
 }
 
@@ -39,15 +88,15 @@ void sensorMeanMeasurements(volatile I2C_t *i2cx, long *mean_ax, long *mean_ay, 
     while(i<(bufferSize+101)){
 
         get_raw_measurements(i2cx, true);
-        process_raw_measurements();
+        process_raw_measurements(&mpu6050_data);
         // discard first 100 measurements
         if(i > 100 && i <= (bufferSize+100)){
-            buff_ax+=mpu6050_raw_data.ax;
-            buff_ay+=mpu6050_raw_data.ay;
-            buff_az+=mpu6050_raw_data.az;
-            buff_gx+=mpu6050_raw_data.gx;
-            buff_gy+=mpu6050_raw_data.gy;
-            buff_gz+=mpu6050_raw_data.gz;
+            buff_ax+=mpu6050_data.rawData.rawData.ax;
+            buff_ay+=mpu6050_data.rawData.rawData.ay;
+            buff_az+=mpu6050_data.rawData.rawData.az;
+            buff_gx+=mpu6050_data.rawData.rawData.gx;
+            buff_gy+=mpu6050_data.rawData.rawData.gy;
+            buff_gz+=mpu6050_data.rawData.rawData.gz;
         }
         if (i==(bufferSize+100)){
             *mean_ax=buff_ax/bufferSize;
@@ -61,13 +110,23 @@ void sensorMeanMeasurements(volatile I2C_t *i2cx, long *mean_ax, long *mean_ay, 
         delay(2, true);
     }    
 }
+
 void calibrateMpu6050(volatile I2C_t *i2cx){
 
-    int acc_deadzone = 8;
+    int acc_deadzone = 6;
     int gyro_deadzone = 1;
 
     int ax_offset = 0, ay_offset = 0, az_offset = 0, gx_offset = 0, gy_offset = 0, gz_offset = 0;
     long mean_ax=0, mean_ay=0, mean_az=0, mean_gx=0, mean_gy=0, mean_gz=0;
+
+    // set offsets to zero values 
+    setGyroXoffset(i2cx, (int16_t)0x0000, true);
+    setGyroYoffset(i2cx, (int16_t)0x0000, true);
+    setGyroZoffset(i2cx, (int16_t)0x0000, true);
+
+    setAccXoffset(i2cx, (int16_t)0x0000, true);
+    setAccYoffset(i2cx, (int16_t)0x0000, true);
+    setAccZoffset(i2cx, (int16_t)0x0000, true);
 
     sensorMeanMeasurements(i2cx, &mean_ax, &mean_ay, &mean_az, &mean_gx, &mean_gy, &mean_gz);
 
@@ -116,11 +175,11 @@ void calibrateMpu6050(volatile I2C_t *i2cx){
         }
         else ay_offset = ay_offset-(mean_ay/acc_deadzone);
 
-        if(abs(16834 - mean_az) <= acc_deadzone){
+        if(abs(16384 - mean_az) <= acc_deadzone){
             ready++;
             readAccZoffset(i2cx, true);
         }
-        else az_offset = az_offset+((16834 - mean_az)/acc_deadzone);
+        else az_offset = az_offset+((16384 - mean_az)/acc_deadzone);
 
         if(abs(mean_gx) <= gyro_deadzone){
             ready++;
@@ -164,6 +223,52 @@ void calibrateMpu6050(volatile I2C_t *i2cx){
 
 }
 
+// Custom round function
+static inline int16_t custom_round(float x) {
+    return (int16_t)(x >= 0.0f ? x + 0.5f : x - 0.5f);
+}
+
+// Helper function to mimic the 'map' function in Arduino
+float map_float(float x, float in_min, float in_max, float out_min, float out_max) {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+
+
+void read_mpu6050_data(volatile I2C_t *i2cx) {
+    static int32_t accel_avg[3] = {0}, gyro_avg[3] = {0};
+    static int sample_count = 0;
+    
+    uint8_t buffer[14];
+    i2c_read(i2cx, IMU_ADDRESS, REG_AX_H, buffer, 14, true);
+    
+    int16_t ax = (buffer[0] << 8) | buffer[1];
+    int16_t ay = (buffer[2] << 8) | buffer[3];
+    int16_t az = (buffer[4] << 8) | buffer[5];
+    int16_t gx = (buffer[8] << 8) | buffer[9];
+    int16_t gy = (buffer[10] << 8) | buffer[11];
+    int16_t gz = (buffer[12] << 8) | buffer[13];
+    
+    // Apply moving average filter
+    accel_avg[0] = (accel_avg[0] * (MOVING_AVERAGE_SAMPLES - 1) + ax) / MOVING_AVERAGE_SAMPLES;
+    accel_avg[1] = (accel_avg[1] * (MOVING_AVERAGE_SAMPLES - 1) + ay) / MOVING_AVERAGE_SAMPLES;
+    accel_avg[2] = (accel_avg[2] * (MOVING_AVERAGE_SAMPLES - 1) + az) / MOVING_AVERAGE_SAMPLES;
+    gyro_avg[0] = (gyro_avg[0] * (MOVING_AVERAGE_SAMPLES - 1) + gx) / MOVING_AVERAGE_SAMPLES;
+    gyro_avg[1] = (gyro_avg[1] * (MOVING_AVERAGE_SAMPLES - 1) + gy) / MOVING_AVERAGE_SAMPLES;
+    gyro_avg[2] = (gyro_avg[2] * (MOVING_AVERAGE_SAMPLES - 1) + gz) / MOVING_AVERAGE_SAMPLES;
+    
+    if (++sample_count >= MOVING_AVERAGE_SAMPLES) {
+        float ax_g = (float)accel_avg[0] / ACCEL_SENSITIVITY;
+        float ay_g = (float)accel_avg[1] / ACCEL_SENSITIVITY;
+        float az_g = (float)accel_avg[2] / ACCEL_SENSITIVITY;
+        float gx_dps = (float)gyro_avg[0] / GYRO_SENSITIVITY;
+        float gy_dps = (float)gyro_avg[1] / GYRO_SENSITIVITY;
+        float gz_dps = (float)gyro_avg[2] / GYRO_SENSITIVITY;
+                
+        sample_count = 0;
+    }
+}
+
 void readGyroConfig(volatile I2C_t *i2cx, bool blocking){
 
     uint8_t data = 0;
@@ -173,6 +278,11 @@ void readGyroConfig(volatile I2C_t *i2cx, bool blocking){
 void setAccConfig(volatile I2C_t *i2cx, uint8_t config, bool blocking){
 
     i2c_write_bits(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_A_CFG, bit_mask(3U, 4U), config, blocking);
+}
+
+void setGyroConfig(volatile I2C_t *i2cx, uint8_t config, bool blocking){
+
+    i2c_write_bits(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_G_CFG, bit_mask(3U, 4U), config, blocking);
 }
 
 void readAccConfig(volatile I2C_t *i2cx, bool blocking){
@@ -299,7 +409,10 @@ uint16_t readFifoByteCount(volatile I2C_t *i2cx, bool blocking){
     uint8_t data[2] = {0};
     i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_FIFO_COUNT_H, &data, 2, blocking);
 
-    return (uint16_t)((uint16_t)data[1] << 8 | data[0]);
+    if((uint16_t)(data[0] << 8 | data[1]) > 1){
+        asm("nop");
+    }
+    return (uint16_t)(data[0] << 8 | data[1]);
 }
 
 void resetFifo(volatile I2C_t *i2cx, uint8_t enable , bool blocking){
@@ -349,7 +462,7 @@ bool getIntStatus(volatile I2C_t *i2cx, uint8_t enable , bool blocking){
 }
 void readFifoBytes(volatile I2C_t *i2cx, uint8_t *data, uint16_t byteCount, bool blocking){
 
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_FIFO, &data, byteCount, blocking);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_FIFO, data, byteCount, blocking);
 }
 
 bool getDMPpacket(volatile I2C_t *i2cx, uint8_t *data, uint8_t packetSize, bool blocking){
@@ -357,8 +470,10 @@ bool getDMPpacket(volatile I2C_t *i2cx, uint8_t *data, uint8_t packetSize, bool 
     int16_t fifoCount;
     bool packetReceived = false;
 
+    fifoCount = readFifoByteCount(i2cx, true);
+
     // check dmp fifo count 
-    if(fifoCount = readFifoByteCount(i2cx, true) > packetSize){
+    if(fifoCount > packetSize){
 
         // if the buffer contains more than 200 bytes, it is faster to just reset the buffer and wait for next packet
         if(fifoCount > 200){
@@ -393,7 +508,7 @@ bool getDMPpacket(volatile I2C_t *i2cx, uint8_t *data, uint8_t packetSize, bool 
         return false;
     }
     i2cx->data_requested = true;
-    readFifoBytes(i2cx, data, packetSize, false);
+    readFifoBytes(i2cx, data, packetSize, blocking);
     return packetReceived;
 }
 
@@ -587,18 +702,17 @@ bool writeDMPfw(volatile I2C_t *i2cx){
 
 void read_mpu_config(volatile I2C_t *i2cx){
 
-    uint8_t data; 
     // read all configuration registers
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_PWR_MGMT_1, &data, 1, true);
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_USER_CTRL, &data, 1, true);
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_INTR_EN, &data, 1, true);
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_FIFO_CFG, &data, 1, true);
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_A_CFG, &data, 1, true);
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)MPU6050_RA_INT_PIN_BYPASS, &data, 1, true);
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_SAMPLE_RATE_DIV, &data, 1, true);
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_DLFP_CFG, &data, 1, true);
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)MPU6050_RA_DMP_CFG_1, &data, 1, true);
-    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_G_CFG, &data, 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_PWR_MGMT_1, &mpu6050_config.configurationRegs[PWR_MGMT_1], 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_USER_CTRL, &mpu6050_config.configurationRegs[USER_CTRL], 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_INTR_EN, &mpu6050_config.configurationRegs[INT_ENABLE], 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_FIFO_CFG, &mpu6050_config.configurationRegs[FIFO_CFG], 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_A_CFG, &mpu6050_config.configurationRegs[ACC_CFG], 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)MPU6050_RA_INT_PIN_BYPASS, &mpu6050_config.configurationRegs[RA_INT_PIN_BYPASS], 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_SAMPLE_RATE_DIV, &mpu6050_config.configurationRegs[SAMPLE_RATE_DIV], 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_DLFP_CFG, &mpu6050_config.configurationRegs[DLPF_CFG], 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)MPU6050_RA_DMP_CFG_1, &mpu6050_config.configurationRegs[DMP_CFG_1], 1, true);
+    i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_G_CFG, &mpu6050_config.configurationRegs[GYRO_CFG], 1, true);
 
 }
 void imu_init(volatile I2C_t *i2cx){
@@ -631,19 +745,22 @@ void imu_init(volatile I2C_t *i2cx){
     // set active level for fifo interrpts to HIGH, configure mpu to clear active interrupt flag on fifo reads
     configFifoInterrupt(i2cx, &data, true);
     
-     // set sampling rate to 400Hz
-    setIMUsmplrt(i2cx, 4U , true);
+     // set sampling rate to 200Hz
+    setIMUsmplrt(i2cx, 1U , true);
 
     // set digital low pass filter to 44 Hz 
-    setDLPF(i2cx, DLFP_CFG_FILTER_3 , true);    
+    setDLPF(i2cx, DLFP_CFG_FILTER_1 , true);    
     
     // load dmp firmware into memory 
     if(!writeDMPfw(i2cx)){
         while(1);
     }
-
+    uint8_t dmpConfigdata[2];
     // set DMP config
-    uint8_t dmpConfigdata[2] = {0x04, 0x00};
+    uint16_t startAddress = 1024U;
+    dmpConfigdata[0] = startAddress >> 8;
+    dmpConfigdata[1] = startAddress & 0xFF;
+    
     setDMPConfig1(i2cx, &dmpConfigdata, 2, true);
 
     data = 0xC0;
@@ -657,14 +774,24 @@ void imu_init(volatile I2C_t *i2cx){
     enableDmpInt(i2cx, true, true);
     
     setAccConfig(i2cx, A_CFG_2G, true);
-    readAccConfig(i2cx, true);
+    setGyroConfig(i2cx, 0x3, true);
 
-    // read gyro config
-    readGyroConfig(i2cx,true);
-
-    // run calibration routine
-    //calibrateMpu6050(i2cx);
     asm("nop");
+
+    read_mpu_config(i2cx);
+
+    asm("nop");
+
+    resetFifo(i2cx, 1U, true);
+    // disable dmp initially 
+    enableDMP(i2cx, 1U, true);
+    asm("nop");
+
+    asm("nop");
+
+    resetFifo(i2cx, 1U, true);
+    
+    //calibrateMpu6050(i2cx);
 
     // set offsets to pre-determined values 
     setGyroXoffset(i2cx, mpu6050_offsets.xg_offset, true);
@@ -675,11 +802,21 @@ void imu_init(volatile I2C_t *i2cx){
     setAccYoffset(i2cx, mpu6050_offsets.ay_offset, true);
     setAccZoffset(i2cx, mpu6050_offsets.az_offset, true);
 
-    // disable dmp initially 
-    enableDMP(i2cx, true, true);
-    asm("nop");
-
-    read_mpu_config(i2cx);
+    init_kalman_filter(&kalmanFilter, 0.0f, 5.0f);
+    uint32_t time_elapsed = 0;
+    uint32_t old_time = 0;
+    uint32_t time = 0;
+    /*
+    while(1){
+        time = gTickCount;
+        time_elapsed = time - old_time;
+        old_time = time;
+        get_raw_measurements(i2cx, true);
+        process_raw_measurements(&mpu6050_data);
+        convert_raw_data_to_angle(&mpu6050_data, (float)time_elapsed);
+        delay(1U, true);
+    }    
+    */
     return 0; // success
 
 }

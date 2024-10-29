@@ -18,6 +18,11 @@
 #define PULL_UP                      (1)
 #define PULL_DOWN                    (2)
 
+#define LOW_SPEED                    (0)
+#define MED_SPEED                    (1)
+#define HIGH_SPEED                   (2)
+#define MAX_SPEED                    (3)
+
 enum gpio_alternate_funcs {
 
     AF0,
@@ -42,7 +47,10 @@ void setGpioMode(GPIO_CONFIG_t *gpio_base, uint8_t pin, uint8_t mode);
 void setGpioOutput(GPIO_CONFIG_t *gpio_base, uint8_t pin, uint8_t outputType);
 void setGpioAlternateFunction(GPIO_CONFIG_t *gpio_base, uint8_t pin, uint8_t alternateFunction);
 void setGpioPupDR(GPIO_CONFIG_t *gpio_base, uint8_t pin, uint8_t pupMode);
+void setGpioSpeed(GPIO_CONFIG_t *gpio_base, uint8_t pin, uint8_t speed);
 void enableBusToGpioPort(uint8_t gpioPort);
+void setGpioOut(GPIO_CONFIG_t *gpio_base);
+void clrGpioOut(GPIO_CONFIG_t *gpio_base);
 uint8_t readGpioInput(GPIO_CONFIG_t *gpio_base);
 
 #endif /*GPIO_H_*/

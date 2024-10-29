@@ -16,13 +16,17 @@ void setGpioOutput(GPIO_CONFIG_t *gpio_base, uint8_t pin, uint8_t outputType){
 void setGpioAlternateFunction(GPIO_CONFIG_t *gpio_base, uint8_t pin, uint8_t alternateFunction){
 
     uint16_t shiftAmt = (4U * (pin % 8U));
-    if(pin < 7){
+    if(pin < 8){
         MODIFY_REG( gpio_base->port_base_addr->AFRL, (15U << shiftAmt), (alternateFunction << shiftAmt));
     }
     else{
         MODIFY_REG( gpio_base->port_base_addr->AFRH, (15U << shiftAmt), (alternateFunction << shiftAmt));
     }
     
+}
+void setGpioSpeed(GPIO_CONFIG_t *gpio_base, uint8_t pin, uint8_t speed){
+
+    gpio_base->port_base_addr->OSPEEDR |= GENERIC_SET_MSK(speed, pin*2U);
 }
 
 void setGpioPupDR(GPIO_CONFIG_t *gpio_base, uint8_t pin, uint8_t pupMode){
@@ -38,4 +42,14 @@ void enableBusToGpioPort(uint8_t gpioPort){
 uint8_t readGpioInput(GPIO_CONFIG_t *gpio_base){
 
     return (uint8_t)(READ_BIT(gpio_base->port_base_addr->IDR, (1U << gpio_base->pin)) >> gpio_base->pin);
+}
+
+void setGpioOut(GPIO_CONFIG_t *gpio_base){
+
+    SET_BIT(gpio_base->port_base_addr->ODR, (1U << gpio_base->pin));
+}
+
+void clrGpioOut(GPIO_CONFIG_t *gpio_base){
+
+    CLEAR_BIT(gpio_base->port_base_addr->ODR, (1U << gpio_base->pin));
 }

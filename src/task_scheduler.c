@@ -28,6 +28,9 @@ void unblock_tasks(void){
 			if((user_tasks[i].block_count == gTickCount && user_tasks[i].lock == UNLOCKED) || 
 		               (user_tasks[i].block_count == 0 && user_tasks[i].lock == UNLOCKED))
 			{
+				if(i == 0){
+					asm("nop");
+				}
 				user_tasks[i].current_state = TASK_READY_STATE;
 			}
 		}
@@ -93,6 +96,11 @@ void init_tasks_stack(void){
 void update_global_tick_count(void){
 	gTickCount++;
 }
+
+uint32_t get_global_tick_count(void){
+
+	return gTickCount;
+}
 void schedule(void){
 	// pend the pendsv exception
 	uint32_t *pICSR = (uint32_t *)0xE000ED04;
@@ -117,6 +125,9 @@ void update_next_task(void){
 		current_task %= MAX_TASKS;
 		state = user_tasks[current_task].current_state;
 		if( (state == TASK_READY_STATE) && (current_task != MAX_TASKS - 1) ){
+			if(i == 0){
+				asm("nop");
+			}
 			break;
 		}
 	}

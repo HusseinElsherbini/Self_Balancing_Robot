@@ -83,7 +83,7 @@ void sys_clock_init(void){
 
 void delay(uint32_t amount, bool blocking){
 
-        // delay for 100ms
+        // delay for x ms
     start_timer(DELAY_TIMER, DELAY_COUNT_1MS*amount);
 
     if(blocking){

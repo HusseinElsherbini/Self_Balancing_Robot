@@ -1,18 +1,11 @@
 ﻿#include "i2c.h"
 #include "led.h"
 #include "gpio.h"
+#include "task_macros.h"
+#include "SEGGER_RTT.h"
+#include "logger.h"
 
-I2C_t i2c1 = {
-
-    .instance                       = (I2C_REGS_t *)I2C1_BASE_ADDRESS,
-    .bufferIndex                    = 0,
-    .i2c_state                      = I2C_IDLE,
-    .data_requested                 = false,
-    .isRepeatedStart                = false,
-    
-};
-
-I2C_CONFIG_t i2c_config = {
+I2C_CONFIG_t i2cConfig = {
     .i2c_regs_base_addr            = (I2C_REGS_t *)I2C1_BASE_ADDRESS,
     .scl_pin_config.port_base_addr = (GPIO_REGS_t *)GPIOB_PERIPH_BASE,
     .scl_pin_config.pin            = 6,
@@ -20,7 +13,154 @@ I2C_CONFIG_t i2c_config = {
     .sda_pin_config.pin            = 7
 }; 
 
+I2C_t i2c1 = {
 
+    .instance                       = (I2C_REGS_t *)I2C1_BASE_ADDRESS,
+    .i2c_config                     = &i2cConfig,
+    .bufferIndex                    = 0,
+    .i2c_state                      = I2C_IDLE,
+    .new_data_available             = false,
+    .isRepeatedStart                = false,
+    
+};
+static TimerHandle_t xI2CRecoveryTimer;
+static I2C_Recovery_State recoveryState;
+
+void simulateI2CBusStuck(I2C_t* i2c_handle) {
+    // Force SDA low by configuring as output and setting low
+    MODIFY_REG(i2c_handle->i2c_config->sda_pin_config.port_base_addr->MODER, 
+               (3U << 2U*i2c_handle->i2c_config->sda_pin_config.pin), 
+               (GPIO_OUTPUT_MODE << 2U*i2c_handle->i2c_config->sda_pin_config.pin));
+    i2c_handle->i2c_config->sda_pin_config.port_base_addr->ODR &= ~(1 << i2c_handle->i2c_config->sda_pin_config.pin);
+    
+    // Set BUSY bit in SR2
+    SET_BIT(i2c_handle->instance->I2C_SR2, (1 << 1));
+}
+
+/* Timer callback for toggling SCL */
+static void vI2CRecoveryCallback(TimerHandle_t xTimer) {
+    if (recoveryState.pulseCount < 9) {
+        if (recoveryState.state == 0) {
+            // Set SCL high
+            recoveryState.port->ODR |= (1 << recoveryState.pin);
+            recoveryState.state = 1;
+        } else {
+            // Set SCL low
+            recoveryState.port->ODR &= ~(1 << recoveryState.pin);
+            recoveryState.state = 0;
+            recoveryState.pulseCount++;
+        }
+        // Timer will auto-reload for next toggle
+    } else {
+        // Stop timer after 9 clock pulses
+        xTimerStop(xI2CRecoveryTimer, 0);
+        
+        // Restore I2C alternate function mode
+        MODIFY_REG(recoveryState.port->MODER, 
+                  (3U << 2U*recoveryState.pin), 
+                  (GPIO_AF_MODE << 2U*recoveryState.pin));
+        recoveryState.port->AFRL |= GENERIC_SET_MSK(4U, (4U)*recoveryState.pin);
+    }
+}
+
+/* Function to initialize recovery timer */
+void initI2CRecoveryTimer(void) {
+    xI2CRecoveryTimer = xTimerCreate(
+        "I2CRecovery",
+        pdMS_TO_TICKS(1),    // 1ms period
+        pdTRUE,              // Auto-reload
+        NULL,
+        vI2CRecoveryCallback
+    );
+}
+
+/* Function to start I2C recovery sequence */
+void startI2CRecovery(GPIO_REGS_t* port, uint8_t pin) {
+    if (xI2CRecoveryTimer == NULL) {
+        initI2CRecoveryTimer();
+    }
+    
+    // Set up recovery state
+    recoveryState.port = port;
+    recoveryState.pin = pin;
+    recoveryState.pulseCount = 0;
+    recoveryState.state = 0;
+    
+    // Configure SCL as output
+    MODIFY_REG(port->MODER, 
+              (3U << 2U*pin), 
+              (GPIO_OUTPUT_MODE << 2U*pin));
+    port->AFRL &= ~GENERIC_SET_MSK(4U, (4U)*pin);
+    
+    // Start the recovery timer
+    xTimerStart(xI2CRecoveryTimer, 0);
+}
+
+/* Modified I2C check and recovery function */
+void checkAndRecoverI2C(I2C_t* i2c_handle) {
+    if (READ_BIT(i2c_handle->instance->I2C_SR2, (1 << 1))) {
+        // Start recovery sequence
+        startI2CRecovery(
+            i2c_handle->i2c_config->scl_pin_config.port_base_addr,
+            i2c_handle->i2c_config->scl_pin_config.pin
+        );
+        
+        // Wait for recovery to complete (9 clock cycles)
+        // You might want to add a timeout here
+        while (recoveryState.pulseCount < 9) {
+            vTaskDelay(pdMS_TO_TICKS(1));
+        }
+    }
+}
+
+void checkAndRecoverI2cBlocking(I2C_t* i2c_handle) {
+    // if SDA stuck, toggle scl line to get it unstuck
+    if(READ_BIT(i2c_handle->instance->I2C_SR2, (1 << 1))){
+
+        //i2c_config.i2c_regs_base_addr->I2C_CR1 &= ~(1U << 0);
+        MODIFY_REG(i2c_handle->i2c_config->scl_pin_config.port_base_addr->MODER, (3U << 2U*i2c_handle->i2c_config->scl_pin_config.pin), (GPIO_OUTPUT_MODE << 2U*i2c_handle->i2c_config->scl_pin_config.pin));
+        i2c_handle->i2c_config->scl_pin_config.port_base_addr->AFRL  &= ~GENERIC_SET_MSK(4U, (4U)*i2c_handle->i2c_config->scl_pin_config.pin);
+
+        for(int i = 0; i < 9; i++){
+
+            i2c_handle->i2c_config->scl_pin_config.port_base_addr->ODR |= ( 1 << i2c_handle->i2c_config->scl_pin_config.pin);
+            delay(1, true);
+            i2c_handle->i2c_config->scl_pin_config.port_base_addr->ODR &= ~( 1 << i2c_handle->i2c_config->scl_pin_config.pin);
+            delay(1, true);
+            
+        }
+
+        // set SDA to Output mode, to issue stop condition
+        MODIFY_REG(i2c_handle->i2c_config->sda_pin_config.port_base_addr->MODER, 
+                  (3U << 2U*i2c_handle->i2c_config->sda_pin_config.pin), 
+                  (GPIO_OUTPUT_MODE << 2U*i2c_handle->i2c_config->sda_pin_config.pin));
+
+        MODIFY_REG(i2c_handle->i2c_config->scl_pin_config.port_base_addr->MODER, (3U << 2U*i2c_handle->i2c_config->scl_pin_config.pin), (GPIO_AF_MODE << 2U*i2c_handle->i2c_config->scl_pin_config.pin));
+        i2c_handle->i2c_config->scl_pin_config.port_base_addr->AFRL  |= GENERIC_SET_MSK(4U, (4U)*i2c_handle->i2c_config->scl_pin_config.pin);
+
+        i2c_handle->i2c_config->scl_pin_config.port_base_addr->ODR |= (1 << i2c_handle->i2c_config->scl_pin_config.pin);
+        delay(1, true);
+        i2c_handle->i2c_config->sda_pin_config.port_base_addr->ODR &= ~(1 << i2c_handle->i2c_config->sda_pin_config.pin);
+        delay(1, true);
+        i2c_handle->i2c_config->sda_pin_config.port_base_addr->ODR |= (1 << i2c_handle->i2c_config->sda_pin_config.pin);
+
+       // 5. Restore I2C configuration
+        // Return both pins to AF mode
+        MODIFY_REG(i2c_handle->i2c_config->scl_pin_config.port_base_addr->MODER, 
+                  (3U << 2U*i2c_handle->i2c_config->scl_pin_config.pin), 
+                  (GPIO_AF_MODE << 2U*i2c_handle->i2c_config->scl_pin_config.pin));
+        MODIFY_REG(i2c_handle->i2c_config->sda_pin_config.port_base_addr->MODER, 
+                  (3U << 2U*i2c_handle->i2c_config->sda_pin_config.pin), 
+                  (GPIO_AF_MODE << 2U*i2c_handle->i2c_config->sda_pin_config.pin));
+                  
+        i2c_handle->i2c_config->scl_pin_config.port_base_addr->AFRL |= GENERIC_SET_MSK(4U, (4U)*i2c_handle->i2c_config->scl_pin_config.pin);
+        i2c_handle->i2c_config->sda_pin_config.port_base_addr->AFRL |= GENERIC_SET_MSK(4U, (4U)*i2c_handle->i2c_config->sda_pin_config.pin);
+        
+        // 6. Re-enable I2C peripheral
+        i2c_handle->instance->I2C_CR1 |= (1U << 0);
+        //i2c_config.i2c_regs_base_addr->I2C_CR1 |= GENERIC_SET_MSK(1U, 0U);
+    }
+}
 void i2c_send_start(uint32_t *i2c_cr1){
 
     *(i2c_cr1) |= (1U << 8U);
@@ -110,6 +250,8 @@ void i2c_write_bits(volatile I2C_t *i2cx, uint16_t imu_address, uint16_t target_
 
 // I2C interrupt handler
 void i2c_ev_IRQhandler(void) {
+
+    volatile BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     uint32_t sr1 = i2c1.instance->I2C_SR1;
     uint32_t sr2 = i2c1.instance->I2C_SR2;
 
@@ -198,11 +340,17 @@ void i2c_ev_IRQhandler(void) {
                 i2c1.instance->I2C_CR1 |= I2C_CR1_STOP; // send stop
             }
             i2c1.i2c_state = I2C_IDLE;
-            if(i2c1.data_requested){
-                INTERRUPT_DISABLE()
-                i2c1.data_requested = false;
-                user_tasks[IMU_RETRIEVE_RAW_DATA].lock = UNLOCKED; 
-                INTERRUPT_ENABLE()
+            
+             // Notify task if it's waiting for data
+            if(xBalancingTaskHandle != NULL) {
+
+                //i2c1.new_data_available = true;
+                xTaskNotifyFromISR(xBalancingTaskHandle,
+                                NOTIFY_IMU_DATA,
+                                eSetBits,
+                                &xHigherPriorityTaskWoken);
+                //vTaskNotifyGiveFromISR(xBalancingTaskHandle, &xHigherPriorityTaskWoken);
+                portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
             }
         }
         // if byte before last, send NACK
@@ -212,26 +360,17 @@ void i2c_ev_IRQhandler(void) {
     }
 }
 void I2C1_EV_IRQHandler(void){
+    DEBUG_ISR_ENTER();
     i2c_ev_IRQhandler();
+    DEBUG_ISR_EXIT();
 } 
 void I2C1_ER_IRQHandler(void){
-    __asm("nop");
-    MODIFY_REG(i2c_config.scl_pin_config.port_base_addr->MODER, (3U << 2U*i2c_config.scl_pin_config.pin), (GPIO_OUTPUT_MODE << 2U*i2c_config.scl_pin_config.pin));
-    i2c_config.scl_pin_config.port_base_addr->AFRL  &= ~GENERIC_SET_MSK(4U, (4U)*i2c_config.scl_pin_config.pin);
-
-    for(int i = 0; i < 9; i++){
-
-        i2c_config.scl_pin_config.port_base_addr->ODR |= ( 1 << i2c_config.scl_pin_config.pin);
-        delay(1, true);
-        i2c_config.scl_pin_config.port_base_addr->ODR &= ~( 1 << i2c_config.scl_pin_config.pin);
-        delay(1, true);
-        
-    }
-    MODIFY_REG(i2c_config.scl_pin_config.port_base_addr->MODER, (3U << 2U*i2c_config.scl_pin_config.pin), (GPIO_AF_MODE << 2U*i2c_config.scl_pin_config.pin));
-    i2c_config.scl_pin_config.port_base_addr->AFRL  |= GENERIC_SET_MSK(4U, (4U)*i2c_config.scl_pin_config.pin);
+    DEBUG_ISR_ENTER();
+    checkAndRecoverI2C(&i2c1);
+    DEBUG_ISR_EXIT();
 }
 
-void i2cInit(void){
+void i2cInit(I2C_t* i2c_handle){
 
     
     /* enable apb1 bus clock access to I2C1 and AHB1 to GPIOB */
@@ -239,97 +378,53 @@ void i2cInit(void){
     SET_BIT(RCC_REGS->RCC_AHB1ENR, GPIOB_EN);
 
     /* set GPIO MODE reg to alternate function SCL:PB6 SDA:PB7 */
-    i2c_config.scl_pin_config.port_base_addr->MODER |= GPIO_MODE_MSK(i2c_config.scl_pin_config.pin, GPIO_AF_MODE);
-    i2c_config.sda_pin_config.port_base_addr->MODER |= GPIO_MODE_MSK(i2c_config.sda_pin_config.pin, GPIO_AF_MODE);
+    i2c_handle->i2c_config->scl_pin_config.port_base_addr->MODER |= GPIO_MODE_MSK(i2c_handle->i2c_config->scl_pin_config.pin, GPIO_AF_MODE);
+    i2c_handle->i2c_config->sda_pin_config.port_base_addr->MODER |= GPIO_MODE_MSK(i2c_handle->i2c_config->sda_pin_config.pin, GPIO_AF_MODE);
 
     /* set GPIO output pins to open drain */
-    i2c_config.scl_pin_config.port_base_addr->OTYPER |= GENERIC_SET_MSK(GPIO_OUTPUT_OPEN_DRAIN, i2c_config.scl_pin_config.pin);
-    i2c_config.sda_pin_config.port_base_addr->OTYPER |= GENERIC_SET_MSK(GPIO_OUTPUT_OPEN_DRAIN, i2c_config.sda_pin_config.pin);  
+    i2c_handle->i2c_config->scl_pin_config.port_base_addr->OTYPER |= GENERIC_SET_MSK(GPIO_OUTPUT_OPEN_DRAIN, i2c_handle->i2c_config->scl_pin_config.pin);
+    i2c_handle->i2c_config->sda_pin_config.port_base_addr->OTYPER |= GENERIC_SET_MSK(GPIO_OUTPUT_OPEN_DRAIN, i2c_handle->i2c_config->sda_pin_config.pin);  
 
     /* Set alternate function type to I2C */
-    i2c_config.scl_pin_config.port_base_addr->AFRL |= GENERIC_SET_MSK(4U, (4U)*i2c_config.scl_pin_config.pin);
-    i2c_config.sda_pin_config.port_base_addr->AFRL |= GENERIC_SET_MSK(4U, (4U)*i2c_config.sda_pin_config.pin);  
+    i2c_handle->i2c_config->scl_pin_config.port_base_addr->AFRL |= GENERIC_SET_MSK(4U, (4U)*i2c_handle->i2c_config->scl_pin_config.pin);
+    i2c_handle->i2c_config->sda_pin_config.port_base_addr->AFRL |= GENERIC_SET_MSK(4U, (4U)*i2c_handle->i2c_config->sda_pin_config.pin);  
 
     /* set PUPDR register to zero, no pull down or pull up needed for sda and scl */
-    i2c_config.scl_pin_config.port_base_addr->PUPDR &= ~(GENERIC_SET_MSK(1U, (2U)*i2c_config.scl_pin_config.pin));
-    i2c_config.sda_pin_config.port_base_addr->PUPDR &= ~(GENERIC_SET_MSK(1U, (2U)*i2c_config.sda_pin_config.pin)); 
+    i2c_handle->i2c_config->scl_pin_config.port_base_addr->PUPDR &= ~(GENERIC_SET_MSK(1U, (2U)*i2c_handle->i2c_config->scl_pin_config.pin));
+    i2c_handle->i2c_config->sda_pin_config.port_base_addr->PUPDR &= ~(GENERIC_SET_MSK(1U, (2U)*i2c_handle->i2c_config->sda_pin_config.pin)); 
 
     /* Reset I2C peripheral */
-    SET_BIT(i2c_config.i2c_regs_base_addr->I2C_CR1, (1 << 15U));
+    SET_BIT(i2c_handle->i2c_config->i2c_regs_base_addr->I2C_CR1, (1 << 15U));
 
     /* Come out of reset mode */
-    CLEAR_BIT(i2c_config.i2c_regs_base_addr->I2C_CR1, (1 << 15U));
+    CLEAR_BIT(i2c_handle->i2c_config->i2c_regs_base_addr->I2C_CR1, (1 << 15U));
 
     /* set i2c mode to sm */
-    i2c_config.i2c_regs_base_addr->I2C_CCR &= ~(GENERIC_SET_MSK(0U, 15U));
+    i2c_handle->i2c_config->i2c_regs_base_addr->I2C_CCR &= ~(GENERIC_SET_MSK(0U, 15U));
 
     /* set peripheral clock frequency */
-    i2c_config.i2c_regs_base_addr->I2C_CR2 |=  GENERIC_SET_MSK(42U, 0U);
+    i2c_handle->i2c_config->i2c_regs_base_addr->I2C_CR2 |=  GENERIC_SET_MSK(42U, 0U);
 
     /* set CCR freq value */
-    i2c_config.i2c_regs_base_addr->I2C_CCR |= GENERIC_SET_MSK(I2C_CCR_VAL, 0U);
+    i2c_handle->i2c_config->i2c_regs_base_addr->I2C_CCR |= GENERIC_SET_MSK(I2C_CCR_VAL, 0U);
 
     /* set TRISE register max val to CCR_FREQ + 1 */
-    i2c_config.i2c_regs_base_addr->I2C_TRISE |= GENERIC_SET_MSK(I2C_SM_TRISE_time, 0U);
+    i2c_handle->i2c_config->i2c_regs_base_addr->I2C_TRISE |= GENERIC_SET_MSK(I2C_SM_TRISE_time, 0U);
 
     /* enable interrupts I2C_EV, I2C_ER, I2C_BUF*/
    // i2c_config.i2c_regs_base_addr->I2C_CR2 |=GENERIC_SET_MSK(0x7UL, 8U);
 
     /* enable i2c peripheral */
-    i2c_config.i2c_regs_base_addr->I2C_CR1 |= GENERIC_SET_MSK(1U, 0U);
+    i2c_handle->i2c_config->i2c_regs_base_addr->I2C_CR1 |= GENERIC_SET_MSK(1U, 0U);
 
-    // if SDA stuck, toggle scl line to get it unstuck
-    if(READ_BIT(i2c1.instance->I2C_SR2, (1 << 1))){
+    //simulateI2CBusStuck(i2c_handle); // used to simulate stuck bus for testing
 
-        //i2c_config.i2c_regs_base_addr->I2C_CR1 &= ~(1U << 0);
-        MODIFY_REG(i2c_config.scl_pin_config.port_base_addr->MODER, (3U << 2U*i2c_config.scl_pin_config.pin), (GPIO_OUTPUT_MODE << 2U*i2c_config.scl_pin_config.pin));
-        i2c_config.scl_pin_config.port_base_addr->AFRL  &= ~GENERIC_SET_MSK(4U, (4U)*i2c_config.scl_pin_config.pin);
+    checkAndRecoverI2cBlocking(i2c_handle);
 
-        for(int i = 0; i < 9; i++){
+    __NVIC_SetPriority(I2C1_EV_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
 
-            i2c_config.scl_pin_config.port_base_addr->ODR |= ( 1 << i2c_config.scl_pin_config.pin);
-            delay(1, true);
-            i2c_config.scl_pin_config.port_base_addr->ODR &= ~( 1 << i2c_config.scl_pin_config.pin);
-            delay(1, true);
-            
-        }
-        MODIFY_REG(i2c_config.scl_pin_config.port_base_addr->MODER, (3U << 2U*i2c_config.scl_pin_config.pin), (GPIO_AF_MODE << 2U*i2c_config.scl_pin_config.pin));
-        i2c_config.scl_pin_config.port_base_addr->AFRL  |= GENERIC_SET_MSK(4U, (4U)*i2c_config.scl_pin_config.pin);
-        //i2c_config.i2c_regs_base_addr->I2C_CR1 |= GENERIC_SET_MSK(1U, 0U);
-    }
-/*
-    uint8_t buffer[1];
-    int length = 1;
-    uint8_t address = 0x68; 
-    uint16_t reg; 
-    i2c1.i2c_regs->I2C_CR1 &= ~(1 << 8);
-    i2c1.i2c_regs -> I2C_CR1 |= (1 << 8);
-    while(!( i2c1.i2c_regs -> I2C_SR1 & I2C_START)){}
-    i2c1.i2c_regs -> I2C_DR = (address << 1) | 0x00;
-    while(!(i2c1.i2c_regs -> I2C_SR1 & I2C_ADDR_MATCH)){}
-    reg = 0x00; 
-    reg = i2c1.i2c_regs -> I2C_SR1;
-    i2c_tr[i2c_step] = reg;
-    i2c_step+=1;
-    reg = i2c1.i2c_regs -> I2C_SR2;
-    while(!(i2c1.i2c_regs -> I2C_SR1 & I2C_TxE)){}
-    for(int i = 0 ; i < length; i++)
-    { 
-    i2c1.i2c_regs -> I2C_DR = buffer[i]; 
-    while(!(i2c1.i2c_regs -> I2C_SR1 & I2C_TxE)){} 
-    while(!(i2c1.i2c_regs -> I2C_SR1 & I2C_BTF)){}  
-    reg = 0x00;  
-    reg = i2c1.i2c_regs -> I2C_SR1;  
-    i2c_tr[i2c_step] = reg;
-    i2c_step+=1;
-    reg = i2c1.i2c_regs -> I2C_SR2; 
-    } 
-    i2c1.i2c_regs->I2C_CR1 |= (1 << 9); 
-    reg = i2c1.i2c_regs->I2C_SR1; 
-    i2c_tr[i2c_step] = reg;
-    i2c_step+=1;
-    reg = i2c1.i2c_regs->I2C_SR2; */
-    /* enable EV and ER irq nvic lines */
+    __NVIC_SetPriority(I2C1_ER_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+
     __NVIC_EnableIRQ((uint32_t)I2C1_EV_IRQn);
     
     __NVIC_EnableIRQ((uint32_t)I2C1_ER_IRQn);

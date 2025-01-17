@@ -1,10 +1,11 @@
 ﻿#include "spi.h"
 #include "gpio.h"
 #include "platform.h"
-#include "task_scheduler.h"
 #include "dma.h"
 #include "main.h"
 #include "aux_board_communication.h"
+#include "FreeRTOS.h"
+#include "task.h"
 /*
 MB_SPI_SCK ----> PA5
 MB_SPI_MISO ---> PA6
@@ -156,7 +157,7 @@ void SPI_WRITE_B(SPI_HandleTypeDef * spiHandle, uint8_t *buff, uint8_t size, uin
 
     uint8_t errorCode = SYS_OK;
     uint16_t initialTxferCount = size;
-    uint32_t tickstart = get_global_tick_count();
+    TickType_t tickstart = xTaskGetTickCount();
 
     /* Set the transaction information */
     spiHandle->State       = SPI_STATE_BUSY_TX;
@@ -194,9 +195,9 @@ void SPI_WRITE_B(SPI_HandleTypeDef * spiHandle, uint8_t *buff, uint8_t size, uin
             spiHandle->TxXferCount--;
         }
         else
-        {
+        {    
             /* Timeout management */
-            if (((get_global_tick_count() - tickstart) >=  timeout) || (timeout == 0U))
+            if (((xTaskGetTickCount() - tickstart) >=  timeout) || (timeout == 0U))
             {
                 errorCode = SYS_TIMEOUT;
 
@@ -207,7 +208,7 @@ void SPI_WRITE_B(SPI_HandleTypeDef * spiHandle, uint8_t *buff, uint8_t size, uin
     /* wait until busy flag is reset and end transaction */
     while ((SPI_GET_FLAG(spiHandle, SPI_FLAG_BSY) ? SET : RESET) != RESET){
 
-        if (((get_global_tick_count() - tickstart) >=  timeout) || (timeout == 0U)){
+        if (((xTaskGetTickCount() - tickstart) >=  timeout) || (timeout == 0U)){
 
             SET_BIT(spiHandle->ErrorCode, SPI_ERROR_FLAG);
             errorCode = SYS_TIMEOUT;
@@ -451,11 +452,11 @@ error :
 static void SPI_DMATransmitCplt(DMA_HandleTypeDef *hdma)
 {
   SPI_HandleTypeDef *spiHandle = (SPI_HandleTypeDef *)(((DMA_HandleTypeDef *)hdma)->Parent); 
-  uint32_t tickstart;
+  TickType_t tickstart;
   uint32_t errorcode;
 
   /* Init tickstart for timeout management*/
-  tickstart = get_global_tick_count();
+  tickstart = xTaskGetTickCount();
 
   /* DMA Normal Mode */
   if ((hdma->Instance->CR & DMA_SxCR_CIRC) != DMA_SxCR_CIRC)
@@ -469,7 +470,7 @@ static void SPI_DMATransmitCplt(DMA_HandleTypeDef *hdma)
     /* Check the end of the transaction */
     while ((SPI_GET_FLAG(spiHandle, SPI_FLAG_BSY) ? SET : RESET) != RESET){
 
-        if (((get_global_tick_count() - tickstart) >=  SPI_DEFAULT_TIMEOUT)){
+        if (((xTaskGetTickCount() - tickstart) >=  SPI_DEFAULT_TIMEOUT)){
 
             SET_BIT(spiHandle->ErrorCode, SPI_ERROR_FLAG);   
         }
@@ -516,13 +517,13 @@ static void SPI_DMATransmitCplt(DMA_HandleTypeDef *hdma)
 static void SPI_DMAReceiveCplt(DMA_HandleTypeDef *hdma)
 {
   SPI_HandleTypeDef *spiHandle = (SPI_HandleTypeDef *)(((DMA_HandleTypeDef *)hdma)->Parent); 
-  uint32_t tickstart;
+  TickType_t tickstart;
 #if (USE_SPI_CRC != 0U)
   __IO uint32_t tmpreg = 0U;
 #endif /* USE_SPI_CRC */
 
   /* Init tickstart for timeout management*/
-  tickstart = get_global_tick_count();
+  tickstart = xTaskGetTickCount();
 
   /* DMA Normal Mode */
   if ((hdma->Instance->CR & DMA_SxCR_CIRC) != DMA_SxCR_CIRC)
@@ -562,7 +563,7 @@ static void SPI_DMAReceiveCplt(DMA_HandleTypeDef *hdma)
     /* Check the end of the transaction */
     while ((SPI_GET_FLAG(spiHandle, SPI_FLAG_BSY) ? SET : RESET) != RESET){
 
-        if (((get_global_tick_count() - tickstart) >=  SPI_DEFAULT_TIMEOUT)){
+        if (((xTaskGetTickCount() - tickstart) >=  SPI_DEFAULT_TIMEOUT)){
 
             SET_BIT(spiHandle->ErrorCode, SPI_ERROR_FLAG);   
         }
@@ -603,13 +604,13 @@ static void SPI_DMAReceiveCplt(DMA_HandleTypeDef *hdma)
 static void SPI_DMATransmitReceiveCplt(DMA_HandleTypeDef *hdma)
 {
   SPI_HandleTypeDef *spiHandle = (SPI_HandleTypeDef *)(((DMA_HandleTypeDef *)hdma)->Parent); 
-  uint32_t tickstart;
+  TickType_t tickstart;
 #if (USE_SPI_CRC != 0U)
   __IO uint32_t tmpreg = 0U;
 #endif /* USE_SPI_CRC */
 
   /* Init tickstart for timeout management*/
-  tickstart = get_global_tick_count();
+  tickstart = xTaskGetTickCount();
 
   /* DMA Normal Mode */
   if ((hdma->Instance->CR & DMA_SxCR_CIRC) != DMA_SxCR_CIRC)
@@ -636,7 +637,7 @@ static void SPI_DMATransmitReceiveCplt(DMA_HandleTypeDef *hdma)
     /* Check the end of the transaction */
     while ((SPI_GET_FLAG(spiHandle, SPI_FLAG_BSY) ? SET : RESET) != RESET){
 
-        if (((get_global_tick_count() - tickstart) >=  SPI_DEFAULT_TIMEOUT)){
+        if (((xTaskGetTickCount() - tickstart) >=  SPI_DEFAULT_TIMEOUT)){
 
             SET_BIT(spiHandle->ErrorCode, SPI_ERROR_FLAG);   
         }

@@ -2,6 +2,7 @@
 #define DMA_H_
 
 #include "cortex.h"
+#include "stm32f4_basetypes.h"
 #include "platform.h"
 
  #define TIMEOUT_DMA_ABORT    5U

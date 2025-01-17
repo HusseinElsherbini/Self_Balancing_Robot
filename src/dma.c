@@ -1,7 +1,8 @@
 ﻿#include "dma.h"
 #include "platform.h"
 #include "spi.h"
-#include "task_scheduler.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 static uint32_t DMA_CalcBaseAndBitshift(DMA_HandleTypeDef *hdma)
 {
@@ -28,7 +29,8 @@ static uint32_t DMA_CalcBaseAndBitshift(DMA_HandleTypeDef *hdma)
 StatusTypeDef DMA_Init(DMA_HandleTypeDef *hdma)
 {
   uint32_t tmp = 0U;
-  uint32_t tickstart = get_global_tick_count();
+  TickType_t tickstart = xTaskGetTickCount();
+
   DMA_Base_Registers *regs;
 
   /* Check the DMA peripheral state */
@@ -50,7 +52,7 @@ StatusTypeDef DMA_Init(DMA_HandleTypeDef *hdma)
   while((hdma->Instance->CR & DMA_SxCR_EN) != RESET)
   {
     /* Check for the Timeout */
-    if (((get_global_tick_count() - tickstart) >  TIMEOUT_DMA_ABORT))
+    if (((xTaskGetTickCount() - tickstart) >  TIMEOUT_DMA_ABORT))
     {
       /* Update error code */
       hdma->ErrorCode = SYS_TIMEOUT;

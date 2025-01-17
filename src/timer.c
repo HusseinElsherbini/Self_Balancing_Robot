@@ -1,6 +1,64 @@
 ﻿#include "timer_common.h"
+#include "FreeRTOSConfig.h"
+#include "cortex.h"
+
 //#include "main.h"
 
+TIMER_TIM_T htim5 = {0};
+
+void initTimer5(void)
+{
+
+    /* Initialize TIM5 */
+    htim5.timer_config.timer_base_address = TIM5;
+    htim5.timer_config.div_clk = TIM_CR1_CKD_CK_INT;
+    htim5.timer_config.timer_prescaler = (configCPU_CLOCK_HZ / 1000000) - 1; // For 1MHz timer clock
+    htim5.timer_config.alignment = TIM_CR1_CMS_EDGE;
+    htim5.timer_config.direction = TIM1_CR1_DIR_UP;
+    htim5.timer_config.timxRccEn = TIM5_RCC_EN;
+
+    /* Enable TIM5 clock */
+    enableBustToTimerPeriph(&htim5);
+    
+    /* Configure Timer */
+    // Reset timer registers
+    htim5.timer_config.timer_base_address->CR1 = 0;
+
+    // Setup clock division
+    SET_BIT(htim5.timer_config.timer_base_address->CR1, htim5.timer_config.div_clk);
+    
+    // Set prescaler
+    htim5.timer_config.timer_base_address->PSC = htim5.timer_config.timer_prescaler;
+    
+    // Set auto-reload value for 1kHz (1ms) interrupt
+    htim5.timer_config.timer_base_address->ARR = (1000000 / configTICK_RATE_HZ) - 1;
+
+       
+
+    // Set counter direction (up counting)
+    MODIFY_REG(htim5.timer_config.timer_base_address->CR1, 
+               TIM_CR1_DIR_MASK, 
+               htim5.timer_config.direction);
+    
+    // Set alignment mode
+    MODIFY_REG(htim5.timer_config.timer_base_address->CR1, 
+               TIM_CR1_CMS_MASK, 
+               htim5.timer_config.alignment);
+    
+    // Enable update interrupt
+    SET_BIT(htim5.timer_config.timer_base_address->DIER, TIM_DIER_UIE);
+   
+    /* Enable timer interrupt in NVIC */
+    __NVIC_SetPriority(TIM5_IRQn, configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY);
+    __NVIC_EnableIRQ(TIM5_IRQn);
+   
+    /* Start timer */
+    // Enable counter
+    SET_BIT(htim5.timer_config.timer_base_address->CR1, TIM_CR1_CEN);
+    
+    // Generate update event to load prescaler and ARR values
+    SET_BIT(htim5.timer_config.timer_base_address->EGR, TIM_EGR_UG);
+}
 
 void setup_timer_mode(TIMER_CONFIG_T * timerConfig){
 
@@ -90,6 +148,9 @@ void enableBustToTimerPeriph(TIMER_TIM_T * timer){
 
     if(timer->timer_config.timer_base_address == TIM1){
         SET_BIT(RCC_REGS->RCC_APB2ENR, (1 << timer->timer_config.timxRccEn));
+    }
+    else if(timer->timer_config.timer_base_address == TIM5){
+        SET_BIT(RCC_REGS->RCC_APB1ENR, (1 << timer->timer_config.timxRccEn));
     }
     
 }

@@ -5,6 +5,7 @@
 #include "platform.h"
 #include "cortex.h"
 #include "dma.h"
+#include "stm32f4_basetypes.h"
 /*
 MB_SPI_SCK ----> PA5
 MB_SPI_MISO ---> PA6

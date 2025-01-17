@@ -16,9 +16,9 @@ PWM_CH_T pwmA = {
     .timerX.timer_config.timer_prescaler         = PWM_INPUT_CLOCK_PRESCALER,
     .timerX.ccrReg                               = (uint32_t *)TIMx_CCREG_CHANNEL_OFFSET_ADDRESS(TIM1_PERIPH_BASE, CH3),
     .dutyCycle                                   = 0U,
-    .freq                                        = PWMA_FREQUENCY,   // frequency is 10kHz
-    .timerX.autoreloadVal                        = CALCULATE_ARR_VALUE
-    
+    .freq                                        = PWMA_FREQUENCY,   // frequency is 20kHz
+    .timerX.autoreloadVal                        = CALCULATE_ARR_VALUE,
+    .resolution                                  = PWM_RESOLUTION
 }; 
 
 PWM_CH_T pwmB = {
@@ -37,8 +37,9 @@ PWM_CH_T pwmB = {
     .timerX.timer_config.timer_prescaler         = PWM_INPUT_CLOCK_PRESCALER,
     .timerX.ccrReg                               = (uint32_t *)TIMx_CCREG_CHANNEL_OFFSET_ADDRESS(TIM1_PERIPH_BASE, CH2),
     .dutyCycle                                   = 0U,
-    .freq                                        = PWMA_FREQUENCY,   // frequency is 10kHz
-    .timerX.autoreloadVal                        = CALCULATE_ARR_VALUE
+    .freq                                        = PWMA_FREQUENCY,   // frequency is 20kHz
+    .timerX.autoreloadVal                        = CALCULATE_ARR_VALUE,
+    .resolution                                  = PWM_RESOLUTION
     
 }; 
 
@@ -64,13 +65,15 @@ void pwmInit(PWM_CH_T *pwm_ch){
 
 }
 
-void pwmSetDutyCycle(PWM_CH_T *pwm_ch, float duty_cycle){
+PWM_ERROR_T pwmSetDutyCycle(PWM_CH_T *pwm_ch, uint32_t duty_cycle){
     pwm_ch->dutyCycle = duty_cycle;
-    if(pwm_ch->dutyCycle > 100.0f){
-        pwm_ch->dutyCycle = 0.0f;
+    // Check for valid duty cycle
+    if (duty_cycle < 0 || duty_cycle > pwm_ch->resolution) {
+        return PWM_INVALID_DUTY_CYCLE;
     }
-    const float ccr_val = (((float)pwm_ch->timerX.autoreloadVal)*pwm_ch->dutyCycle)/100.0f;
-    *pwm_ch->timerX.ccrReg = (uint32_t)ccr_val;
+
+    *pwm_ch->timerX.ccrReg = (uint32_t)duty_cycle;
+    return PWM_OK;
 }
 
 void pwmSetFreq(PWM_CH_T *pwm_ch){

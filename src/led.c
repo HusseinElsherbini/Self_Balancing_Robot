@@ -65,3 +65,7 @@ void led_off(led *ledX){
   *(ledX->data_reg) &=  ~( 1 << ledX->led_no );
 
 }
+
+void led_toggle(led *ledX) {
+    *(ledX->data_reg) ^= (1 << ledX->led_no);
+}

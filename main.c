@@ -1,162 +1,236 @@
 #include "main.h"
 
-//semihosting init function
-extern void initialise_monitor_handles(void);
-
 // initialize global timers 
 global_timers_t global_timers = {
 	.timer_flags.timer = {RDY},
 	.timers            = {0}
 };
 
+volatile TaskHandle_t xBalancingTaskHandle = NULL;
+volatile TaskHandle_t xRcTaskHandle = NULL;
+volatile TaskHandle_t xMonitorTaskHandle = NULL;
+volatile TaskHandle_t xLogTaskHandle = NULL;
+
+QueueHandle_t xImuDataQueue = NULL;
+QueueHandle_t xRcCommandsQueue = NULL;
+QueueHandle_t xMotorCommandsQueue = NULL;
+QueueHandle_t xLogQueue = NULL;
+
 
 int main(void)
 {
-	initialise_monitor_handles();
 
-	printf("Implementation of a task scheduler\n");
-
+	SEGGER_RTT_printf(0, "Robot Coming to life! \n");
+	// disable write buffer use for access to default memory 
 	DISABLE_WB();
 
-	init_schedulaer_stack(SCHED_STACK_START);
+	// enable fpu
+	enableFPU();
 
-	init_tasks_stack();
-	
 	sw_hw_init();
-
-	pwmSetDutyCycle(&pwmA, (float)50.0);
-	pwmSetDutyCycle(&pwmB, (float)50.0);
 	
-	switch_sp_to_psp();	
+	// stop motors
+	actuateMotor(&xMotorBHandle, MOTOR_STOP, (uint32_t)0);
+	actuateMotor(&xMotorAHandle, MOTOR_STOP , (uint32_t)0);
+    
+	// moving to TIM5 as main timer
+	disable_systick_timer();
 
 	// start scheduler context switching 
-	sysFlags.startScheduler = true;
-
-	task1_handler();
-
+    xTaskCreate(vBalancingTask,                // Task function
+                "Balancing",                   // Task name
+                BALANCING_TASK_STACK_SIZE,     // Stack size
+                NULL,                          // Parameters
+                TASK_PRIORITY_BALANCE,         // Priority
+                NULL);                         // Task handle
+	/*
+	xTaskCreate(vRcTask,              	   // Task function
+				"RC",                      // Task name
+				RC_TASK_STACK_SIZE,  	   // Stack size
+				NULL,                 	   // Parameters
+				TASK_PRIORITY_RC_RECEIVE,  // Priority
+				NULL);                	   // Task handle
+*/
+#if USE_TASK_ANALYSIS
+	xTaskCreate(vMonitorTask,          // Task function
+				"Monitor",             // Task name
+				MONITOR_STACK_SIZE,    // Stack size
+				NULL,                  // Parameters
+				TASK_PRIORITY_LOGGING, // Priority
+				NULL);                 // Task handle
+#endif
+#if DEBUG_LEVEL
+    DEBUG_INIT();
+    xLogQueue = xQueueCreate(1, sizeof(balance_log_data_t));
+    
+    // Create logging task with lower priority than balance task
+    xTaskCreate(vLogTask,
+                "Log",
+                LOG_CRITICAL_DATA_TASK_STACK_SIZE,
+                NULL,
+                TASK_PRIORITY_LOGGING,  // Lower priority than balance task
+                NULL);
+#endif
+    // Start the scheduler
+    vTaskStartScheduler();
 	for(;;);
 	
 	
 }
 
-void task1_handler(void)	
+void TIM5_IRQHandler(void)
 {
-	// retrieve raw data from imu 
-	while(1){
-
-		led_on(&yellow_led);
-		//get_raw_measurements(&i2c1, false);
-		lock_task(IMU_RETRIEVE_RAW_DATA);
-		//process_raw_measurements(&mpu6050_data);
-		led_off(&yellow_led);
-		task_delay(DELAY_COUNT_1MS*5U, (uint8_t)UNLOCKED);
-		
-	}
-}
-void task2_handler(void)
-{
-	while(1){
-		
-		requestRadioControlData(&spiHandle1);
-		led_on(&blue_led);
-		task_delay(DELAY_COUNT_500MS, (uint8_t)UNLOCKED);
-		led_off(&blue_led);
-		task_delay(DELAY_COUNT_500MS, (uint8_t)UNLOCKED);
-	}
-}
-void task3_handler(void)
-{
-	while(1){
-		led_on(&red_led);
-		task_delay(DELAY_COUNT_250MS, (uint8_t)UNLOCKED);
-		led_off(&red_led);
-		task_delay(DELAY_COUNT_250MS, (uint8_t)UNLOCKED);
-	}
-}
-
-void task4_handler(void)
-{
-	while(1){
-		checkEncoderStateChange(&rEncoder);
-		if(rEncoder.stateChanged){
-		}
-	}
-
-}
-
-void task5_handler(void)
-{
-	while(1){
-		for(int i = 0; i < MAX_TASKS - 2; i++){
-			taskStackTraceDepth(&user_tasks[i]);
-			task_delay(DELAY_COUNT_1S, (uint8_t)UNLOCKED);
-		}
-	}
-
-}
-void task6_handler(void)
-{
-	while(1){
-		__asm("nop");
-	}
-}
-__attribute__((naked)) void PendSV_Handler(void){
-
-	// when a function is given the attribute "naked" the user must use BX instruction to return back
-	__asm("nop");
-	/* Save the context of the running task
-	 * 1. Get current running task's PSP value
-	 * 2. Using that PSP value store stack frame 2 (R4-R11)
-	 * 3. Save the current value of the PSP
-	 */
-	__asm volatile ("PUSH {LR}");
-	__asm volatile ("MRS R0, PSP");
-	__asm volatile ("STMDB R0!, {R4-R11}");
-	__asm volatile ("BL save_psp_value");
-
-	/* Retrieve the contect of the current task
-	 * 1. Decide next task to run
-	 * 2. get its past PSP value
-	 * 3. Using that PSP value retrieve it's SF2 (R4-R11)
-	 * 4. Update PSP and exit
-	 */
-	__asm volatile ("BL update_next_task");
-	__asm volatile ("BL get_psp_value");
-	__asm volatile ("LDMIA R0!, {R4-R11}");
-	__asm volatile ("MSR PSP, R0");
-	__asm volatile ("POP {LR}");
-	__asm volatile ("BX LR");
-
-}
-void SysTick_Handler(void){
-
-
-	// manage global timers
-	for(int i = 0; i < sizeof(global_timers.timers)/sizeof(global_timers.timers[0]); i++){
-
-		if (global_timers.timers[i] > 0){
-			  global_timers.timers[i]--;
-			  global_timers.timer_flags.timer[i] = IN_PROGRESS;
-		}
-		else if(global_timers.timers[i] == 0 && global_timers.timer_flags.timer[i] == IN_PROGRESS){
-
-			global_timers.timer_flags.timer[i] = EXPIRED;	
-		}
-	}
-	// update global tick count
-	update_global_tick_count();
+    // Clear the interrupt flag
+    CLEAR_BIT(htim5.timer_config.timer_base_address->SR, TIM_SR_UIF);
 	
-	// only run schedular if flag is set
-	if(sysFlags.startScheduler == true){
-		
 
-		// unblock tasks that can run
-		unblock_tasks();
+    // Call FreeRTOS tick handler if scheduler has started
+    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+    {
+        xPortSysTickHandler();
+    }
+}
 
-		// pend the pendsv exception
-		*(cortexPperiphs.pICSR) |= ( 1 << 28 );
+void vBalancingTask(void *pvParameters)
+{
+	// set task handle
+	xBalancingTaskHandle = xTaskGetCurrentTaskHandle();
+	balancingTaskData.targetAngle = 0.0f;  // Fixed target angle for upright position
+	balance_log_data_t log_data;
+
+    balancingTaskData.BALANCING_TASK_STATE = BALANCING_TASK_RUNNING;
+	// initialize last wake time
+	balancingTaskData.xLastWakeTime = xTaskGetTickCount();
+
+	while(1){
+        
+        switch(balancingTaskData.BALANCING_TASK_STATE){
+
+            case BALANCING_TASK_RUNNING:
+                // handle balancing
+                robotBalance(&balancingTaskData);
+                break;
+
+            case BALANCING_TASK_STANDBY:
+                // handle standby
+                robotStandby(&balancingTaskData);
+                break;
+
+            case BALANCING_TASK_ERROR:
+                // handle error
+                robotError(&balancingTaskData);
+                //BALANCING_TASK_STATE = BALANCING_TASK_READY;
+                break;
+
+            default:
+                // do something else
+                break;
+        }
+        if(balancingTaskData.BALANCING_TASK_STATE != BALANCING_TASK_ERROR){
+            // Prepare log data
+            log_data.angle = balancingTaskData.mpu6050_data->processedData.processedData.angle;   // Current angle
+            log_data.angular_vel = balancingTaskData.mpu6050_data->processedData.processedData.angular_velocity;  // Angular velocity 
+            log_data.pid_output = balancingTaskData.pidOutput;  // PID output   
+            xQueueOverwrite(xLogQueue, &log_data);
+        }
+        vTaskDelayUntil(&balancingTaskData.xLastWakeTime, pdMS_TO_TICKS(BALANCING_TASK_PERIOD_MS));    
 	}
+}
+void vRcTask(void *pvParameters)
+{
 
+    xRcTaskHandle = xTaskGetCurrentTaskHandle();
+    TickType_t xLastWakeTime;
+    SBUS_Packet_t sbusPacket;
+    sport_data_frame_t telemetryFrame = {
+        .header = SPORT_START_DATA
+    };
+   
+    xLastWakeTime = xTaskGetTickCount();
+   
+    while(1) {
+        // Wait for either SBUS or SmartPort events
+        uint32_t notificationValue = ulTaskNotifyTake(pdFALSE, pdMS_TO_TICKS(20));
+        
+        // Check which event occurred
+        if(notificationValue & NOTIFY_SBUS_DATA) {
+            // Process SBUS data
+            sbusPacket.lastUpdate = xTaskGetTickCount();
+            memcpy(sbusPacket.rawData, sbusHandle.packetBuffer, sizeof(sbusHandle.packetBuffer));
+            SBUS_decode(&sbusPacket);
+            print_sbus_data(&sbusPacket);
+        }
+        
+        if(notificationValue & NOTIFY_SPORT_POLL) {
+			/*
+            // Immediately respond to telemetry poll
+            updateTelemetryData(&telemetryFrame);
+            telemetryFrame.checksum = calculateSportChecksum(&telemetryFrame);
+            sendSportFrame(&telemetryFrame);*/
+        }
+        
+        // Check for SBUS timeout regardless of which event woke us
+        if((xTaskGetTickCount() - sbusPacket.lastUpdate) > pdMS_TO_TICKS(SIGNAL_TIMEOUT_MS)) {
+            sbusPacket.flags.frameLost = true;
+        }
+
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(RC_TASK_PERIOD_MS));
+    }
+	
+}
+void vMonitorTask(void *pvParameters)
+{
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    
+    while(1)
+    {
+
+        SEGGER_RTT_printf(0, "\n=== System Analysis ===\n");
+        // Check heap status
+        checkHeapStatus();
+        
+        // Check stack usage
+        checkTaskStacks();
+        
+        // Print task timing
+        printTaskTiming();
+        
+        // Run every 5 seconds
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(5000));
+    }
+}
+void vLogTask(void *pvParameters) {
+
+    xLogTaskHandle = xTaskGetCurrentTaskHandle();
+    balance_log_data_t log_data = {0};
+    BalanceLogger_t logger = {0};
+    uint32_t notificationValue;
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t ADC_TIMEOUT_TICKS = pdMS_TO_TICKS(20);
+
+    // Initialize our logging system
+    Logger_Init(&logger, &log_data);
+
+    while(1) {
+        // start conversions on ADC by enabling the timer
+        system_sensors.port_config->Instance->CR2 |= ADC_CR2_SWSTART;
+        notificationValue = ulTaskNotifyTake(pdTRUE, ADC_TIMEOUT_TICKS);
+       
+        if (notificationValue == NOTIFY_LOGGER_TASK_ADC) {
+            // Check for new balance data without blocking
+
+            if(xQueueReceive(xLogQueue, &log_data, 0) == pdTRUE) {
+                __asm("nop");
+            }
+            if (!process_balance_telemetry(&log_data, &logger)) {
+                DEBUG_ERROR("Failed to process telemetry");
+            }
+        } else {
+            DEBUG_WARN("ADC timeout at %u", xTaskGetTickCount());
+        }
+        xTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(LOG_TASK_PERIOD_MS));
+    }
+    
 }
 
 __attribute__((naked)) void MemManage_Handler(void){
@@ -238,5 +312,28 @@ void Error_Handler(void)
   while (1)
   {
   }
+
+}
+void vPortSetupTimerInterrupt(void)
+{
+    /* Override the default implementation of vPortSetupTimerInterrupt() */
+    initTimer5();
+}
+
+void SysTick_Handler(void){
+
+
+	// manage global timers
+	for(int i = 0; i < sizeof(global_timers.timers)/sizeof(global_timers.timers[0]); i++){
+
+		if (global_timers.timers[i] > 0){
+			  global_timers.timers[i]--;
+			  global_timers.timer_flags.timer[i] = IN_PROGRESS;
+		}
+		else if(global_timers.timers[i] == 0 && global_timers.timer_flags.timer[i] == IN_PROGRESS){
+
+			global_timers.timer_flags.timer[i] = EXPIRED;	
+		}
+	}
 
 }

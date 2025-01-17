@@ -6,7 +6,6 @@
 #include "i2c.h"
 #include <stdbool.h>
 #include <ctype.h>
-#include "task_scheduler.h"
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
@@ -329,8 +328,8 @@ typedef struct {
   union processedData_t{
     float processed_data[4];
     struct{
-      float acc_angle_x;
-      float gyro_angle_x;
+      float acc_angle_y;
+      float gyro_angle_y;
       float angle;
       float angular_velocity;
     }processedData;
@@ -412,6 +411,7 @@ static inline int16_t custom_round(float x);
 void calibrate_mpu6050(volatile I2C_t *i2cx);
 void read_mpu6050_data(volatile I2C_t *i2cx);
 void setGyroConfig(volatile I2C_t *i2cx, uint8_t config, bool blocking);
+void print_imu_data(mpu6050_data_t *mpu6050_data);
 
 static const unsigned char dmpMemory[MPU6050_DMP_CODE_SIZE] __attribute__((section(".imu_dmp_fw"))) = {
 0x00, 0xF8, 0xF6, 0x2A, 0x3F, 0x68, 0xF5, 0x7A, 0x00, 0x06, 0xFF, 0xFE, 0x00, 0x03, 0x00, 0x00,

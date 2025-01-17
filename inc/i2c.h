@@ -5,8 +5,10 @@
 #include "platform.h"
 #include "stdbool.h"
 #include "cortex.h"
-#include "task_scheduler.h"
-
+#include "gpio.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h"
 
 #define I2C_READ                  (0x1)
 #define I2C_BURST_READ            (0x2)
@@ -32,6 +34,30 @@
 #define I2C_CR1_ACK         (1U << 10) // Acknowledge Enable
 #define I2C_CR1_POS         (1U << 11) // Acknowledge/PEC Position
 
+typedef struct 
+{
+    volatile uint32_t I2C_CR1;                /* I2C Control register 1*/
+    volatile uint32_t I2C_CR2;                /* I2C Control register 2 */
+    volatile uint32_t I2C_OAR1;               /* I2C Own address register 1 */
+    volatile uint32_t I2C_OAR2;               /* I2C Own address register 2 */
+    volatile uint32_t I2C_DR;                 /* I2C Data register  */
+    volatile uint32_t I2C_SR1;                /* I2C Status register 1  */
+    volatile uint32_t I2C_SR2;                /* I2C Status register 2 */
+    volatile uint32_t I2C_CCR;                /* I2C Clock control register */
+    volatile uint32_t I2C_TRISE;              /* I2C TRISE register */
+    volatile uint32_t I2C_FLTR;               /* I2C FLTR register  */
+
+}I2C_REGS_t;
+
+typedef struct 
+{
+    I2C_REGS_t* i2c_regs_base_addr;
+    GPIO_CONFIG_t scl_pin_config;
+    GPIO_CONFIG_t sda_pin_config;
+    
+}I2C_CONFIG_t;
+
+extern I2C_CONFIG_t i2c_config;
 // Enumeration of error types
 typedef enum {
 	MPU6050_ERR_OK,                  // No error
@@ -63,19 +89,29 @@ typedef enum {
 // I2C handle structure
 typedef struct {
     I2C_REGS_t* instance;          // I2C instance
+    I2C_CONFIG_t* i2c_config;      // I2C configuration
     uint8_t *buffer;                // Data buffer
     uint16_t bufferSize;            // Size of the data buffer
     uint16_t bufferIndex;           // Current index in the buffer
     uint16_t slaveAddress;          // Slave address
     uint8_t registerAddress;        // Register address to read from
     uint8_t i2c_op;                 // flag indicating type of transaction
-    bool data_requested;
+    bool new_data_available;        // flag to indicate new data available
     I2C_STATE_t i2c_state;          // state of current transaction 
     volatile bool isRepeatedStart;  // Flag to indicate repeated start condition
 }I2C_t;
 
 extern I2C_t i2c1;
 
+/* Structure to hold recovery state */
+typedef struct {
+    GPIO_REGS_t* port;
+    uint8_t pin;
+    uint8_t pulseCount;
+    uint8_t state;
+} I2C_Recovery_State;
+
+extern I2C_Recovery_State i2c_recovery_state;
 
 void i2c_send_start(uint32_t *i2c_cr1);
 void i2c_read(volatile I2C_t *i2cx, uint16_t imu_address,  uint16_t target_reg, uint8_t *buff, uint8_t numOfBytes, bool blocking);
@@ -83,5 +119,12 @@ void i2c_write(volatile I2C_t *i2cx, uint16_t imu_address,  uint16_t target_reg,
 void i2c_write_bit(volatile I2C_t *i2cx, uint16_t imu_address, uint16_t target_reg, uint8_t bit_no, uint8_t* data, uint8_t numOfBytes, bool enable, bool blocking);
 void i2c_write_bits(volatile I2C_t *i2cx, uint16_t imu_address, uint16_t target_reg, uint8_t mask, uint8_t data, bool blocking);
 void i2c_ev_IRQhandler(void);
+void i2cInit(I2C_t* i2c_handle);
+static void vI2CRecoveryCallback(TimerHandle_t xTimer);
+void initI2CRecoveryTimer(void);
+void startI2CRecovery(GPIO_REGS_t* port, uint8_t pin);
+void checkAndRecoverI2C(I2C_t * i2c_handle);
+void simulateI2CBusStuck(I2C_t* i2c_handle);
+void checkAndRecoverI2cBlocking(I2C_t* i2c_handle);
 
 #endif /*I2C_H_*/

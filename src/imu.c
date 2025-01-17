@@ -1,7 +1,8 @@
 ﻿#include "imu.h"
 #include <math.h>
 #include "kalman_filter.h"
-
+#include "SEGGER_RTT.h"
+#include "task_macros.h"
 
 mpu6050_data_t mpu6050_data = {
 
@@ -12,13 +13,14 @@ mpu6050_data_t mpu6050_data = {
 
 mpu6050_offset_data_t mpu6050_offsets = {
 
-    .ax_offset = 0xEF79,
-    .ay_offset = 0x08C9,
-    .az_offset = 0x0325,
-    .xg_offset = 0x003A,
-    .yg_offset = 0xFFDE,
-    .zg_offset = 0x0022,
+    .ax_offset = (int16_t)-209,
+    .ay_offset = (int16_t)2762,
+    .az_offset = (int16_t)1140,
+    .xg_offset = (int16_t)44,
+    .yg_offset = (int16_t)-14,
+    .zg_offset = (int16_t)22,
 };
+
 
 mpu6050_config_t mpu6050_config = {
 
@@ -37,7 +39,6 @@ mpu6050_config_t mpu6050_config = {
 };
 void get_raw_measurements(volatile I2C_t *i2cx ,bool blocking){
 
-    i2cx->data_requested = true;
     i2c_read(i2cx, (uint16_t)IMU_ADDRESS, (uint16_t)REG_AX_H, &mpu6050_data.rawData.raw_data, 14, blocking);
 
 }
@@ -55,10 +56,10 @@ void process_raw_measurements(mpu6050_data_t *mpu6050_data){
 void convert_raw_data_to_angle(mpu6050_data_t *mpu6050_data, float timeStep){
 
     // turn raw measurements into angles and angular_velocity 
-    mpu6050_data->processedData.processedData.angular_velocity = (float)(mpu6050_data->rawData.rawData.gx/131.0f);
-    mpu6050_data->processedData.processedData.acc_angle_x = (180/3.141592) * atan(mpu6050_data->rawData.rawData.ax / sqrt(pow(mpu6050_data->rawData.rawData.ay, 2) + pow(mpu6050_data->rawData.rawData.az, 2))); 
-    mpu6050_data->processedData.processedData.gyro_angle_x = mpu6050_data->processedData.processedData.gyro_angle_x + (float)((timeStep/1000.00f)*mpu6050_data->processedData.processedData.angular_velocity);
-    mpu6050_data->processedData.processedData.angle = (float)(0.04*mpu6050_data->processedData.processedData.gyro_angle_x + 0.96*mpu6050_data->processedData.processedData.acc_angle_x);
+    mpu6050_data->processedData.processedData.angular_velocity = (float)(mpu6050_data->rawData.rawData.gy/131.0f);
+    mpu6050_data->processedData.processedData.acc_angle_y = (180/3.141592) * atan(mpu6050_data->rawData.rawData.ay / sqrt(pow(mpu6050_data->rawData.rawData.ax, 2) + pow(mpu6050_data->rawData.rawData.az, 2))); 
+    mpu6050_data->processedData.processedData.gyro_angle_y = mpu6050_data->processedData.processedData.gyro_angle_y + (float)((timeStep/1000.00f)*mpu6050_data->processedData.processedData.angular_velocity);
+    mpu6050_data->processedData.processedData.angle = (float)(0.04*mpu6050_data->processedData.processedData.gyro_angle_y + 0.96*mpu6050_data->processedData.processedData.acc_angle_y);
 
 }
 
@@ -120,13 +121,13 @@ void calibrateMpu6050(volatile I2C_t *i2cx){
     long mean_ax=0, mean_ay=0, mean_az=0, mean_gx=0, mean_gy=0, mean_gz=0;
 
     // set offsets to zero values 
-    setGyroXoffset(i2cx, (int16_t)0x0000, true);
-    setGyroYoffset(i2cx, (int16_t)0x0000, true);
-    setGyroZoffset(i2cx, (int16_t)0x0000, true);
+    setGyroXoffset(i2cx, (int16_t)0.0f, true);
+    setGyroYoffset(i2cx, (int16_t)0.0f, true);
+    setGyroZoffset(i2cx, (int16_t)0.0f, true);
 
-    setAccXoffset(i2cx, (int16_t)0x0000, true);
-    setAccYoffset(i2cx, (int16_t)0x0000, true);
-    setAccZoffset(i2cx, (int16_t)0x0000, true);
+    setAccXoffset(i2cx, (int16_t)0.0f, true);
+    setAccYoffset(i2cx, (int16_t)0.0f, true);
+    setAccZoffset(i2cx, (int16_t)0.0f, true);
 
     sensorMeanMeasurements(i2cx, &mean_ax, &mean_ay, &mean_az, &mean_gx, &mean_gy, &mean_gz);
 
@@ -507,7 +508,6 @@ bool getDMPpacket(volatile I2C_t *i2cx, uint8_t *data, uint8_t packetSize, bool 
     if(!packetReceived){
         return false;
     }
-    i2cx->data_requested = true;
     readFifoBytes(i2cx, data, packetSize, blocking);
     return packetReceived;
 }
@@ -745,13 +745,14 @@ void imu_init(volatile I2C_t *i2cx){
     // set active level for fifo interrpts to HIGH, configure mpu to clear active interrupt flag on fifo reads
     configFifoInterrupt(i2cx, &data, true);
     
-     // set sampling rate to 200Hz
-    setIMUsmplrt(i2cx, 1U , true);
+     // set sampling rate to 1khz
+    setIMUsmplrt(i2cx, 0U , true);
 
     // set digital low pass filter to 44 Hz 
-    setDLPF(i2cx, DLFP_CFG_FILTER_1 , true);    
+    setDLPF(i2cx, DLFP_CFG_FILTER_2 , true);    
     
     // load dmp firmware into memory 
+    /*
     if(!writeDMPfw(i2cx)){
         while(1);
     }
@@ -772,28 +773,19 @@ void imu_init(volatile I2C_t *i2cx){
 
     // enable dmp int
     enableDmpInt(i2cx, true, true);
-    
+  */
     setAccConfig(i2cx, A_CFG_2G, true);
-    setGyroConfig(i2cx, 0x3, true);
-
+    setGyroConfig(i2cx, G_CFG_250, true);
     asm("nop");
-
     read_mpu_config(i2cx);
-
     asm("nop");
+    resetFifo(i2cx, 1U, true);
+
+    // disable dmp initially (enable when needed)
+    enableDMP(i2cx, 0U, true);
 
     resetFifo(i2cx, 1U, true);
-    // disable dmp initially 
-    enableDMP(i2cx, 1U, true);
-    asm("nop");
 
-    asm("nop");
-
-    resetFifo(i2cx, 1U, true);
-    
-    //calibrateMpu6050(i2cx);
-
-    // set offsets to pre-determined values 
     setGyroXoffset(i2cx, mpu6050_offsets.xg_offset, true);
     setGyroYoffset(i2cx, mpu6050_offsets.yg_offset, true);
     setGyroZoffset(i2cx, mpu6050_offsets.zg_offset, true);
@@ -801,22 +793,46 @@ void imu_init(volatile I2C_t *i2cx){
     setAccXoffset(i2cx, mpu6050_offsets.ax_offset, true);
     setAccYoffset(i2cx, mpu6050_offsets.ay_offset, true);
     setAccZoffset(i2cx, mpu6050_offsets.az_offset, true);
-
+   
+    //calibrateMpu6050(i2cx);  // calibrate the mpu6050 (only need to be done once and offsets saved in mpu6050_offsets)
+    asm("nop");
+    asm("nop");
+/*
     init_kalman_filter(&kalmanFilter, 0.0f, 5.0f);
     uint32_t time_elapsed = 0;
     uint32_t old_time = 0;
     uint32_t time = 0;
-    /*
-    while(1){
-        time = gTickCount;
-        time_elapsed = time - old_time;
-        old_time = time;
-        get_raw_measurements(i2cx, true);
-        process_raw_measurements(&mpu6050_data);
-        convert_raw_data_to_angle(&mpu6050_data, (float)time_elapsed);
-        delay(1U, true);
-    }    
-    */
+*/
     return 0; // success
 
+}
+
+void print_imu_data(mpu6050_data_t *mpu6050_data)
+{
+    // Convert floats to fixed-point (multiply by 100 to show 2 decimal places)
+    int32_t angle = (int32_t)(mpu6050_data->processedData.processedData.angle * 100);
+    int32_t gyro_x = (int32_t)(mpu6050_data->processedData.processedData.angular_velocity * 100);
+    int32_t acc_x = (int32_t)(mpu6050_data->rawData.rawData.ax);
+    int32_t acc_y = (int32_t)(mpu6050_data->rawData.rawData.ay);
+    int32_t acc_z = (int32_t)(mpu6050_data->rawData.rawData.az);
+
+
+
+    SEGGER_RTT_printf(0, "\n=== IMU Data ===\n");
+    
+    // Print angle with 2 decimal places
+    SEGGER_RTT_printf(0, "Angle: %d.%02d degrees\n", 
+                     angle / 100, 
+                     abs(angle % 100));
+    
+    // Print angular velocity with 2 decimal places
+    SEGGER_RTT_printf(0, "Angular Velocity: %d.%02d deg/s\n", 
+                     gyro_x / 100, 
+                     abs(gyro_x % 100));
+    
+    // Print accelerometer data
+    SEGGER_RTT_printf(0, "Accelerometer (raw):\n");
+    SEGGER_RTT_printf(0, "  X: %d\n", acc_x);
+    SEGGER_RTT_printf(0, "  Y: %d\n", acc_y);
+    SEGGER_RTT_printf(0, "  Z: %d\n", acc_z);
 }

@@ -1,6 +1,5 @@
 ﻿#include "cortex.h"
 #include "platform.h"
-#include "task_scheduler.h"
 
 sysFlags_t sysFlags = {
 	.startScheduler = false,
@@ -43,6 +42,23 @@ void init_systick_timer(uint32_t tick_hz){
 
 }
 
+void disable_systick_timer(void) {
+    // Disable counter
+    *(cortexPperiphs.pSTCSR) &= ~(1 << 0);
+    
+    // Disable systick exception request
+    *(cortexPperiphs.pSTCSR) &= ~(1 << 1);
+    
+    // Clear current value register
+    *(cortexPperiphs.pSTCVR) = 0;
+    
+    // Clear reload value
+    *(cortexPperiphs.pSTRVR) &= ~(0x00FFFFFF);
+    
+    // Optional: Clear pending systick interrupt
+    SCB->ICSR |= SCB_ICSR_PENDSTCLR_Msk;
+}
+
 void enable_configurable_sys_faults(void){
 
 	// enable USAGE FAULT, BUS FAULT and MEM MANAGE FAULT exceptions
@@ -60,4 +76,25 @@ void __NVIC_EnableIRQ(IRQn_Type IRQn)
   {
     NVIC->ISER[(((uint32_t)IRQn) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)IRQn) & 0x1FUL));
   }
+}
+
+void __NVIC_SetPriority(IRQn_Type IRQn, uint32_t priority)
+{
+  if ((int32_t)(IRQn) >= 0)
+  {
+    NVIC->IP[((uint32_t)IRQn)]               = (uint8_t)((priority << (8U - __NVIC_PRIO_BITS)) & (uint32_t)0xFFUL);
+  }
+  else
+  {
+    SCB->SHP[(((uint32_t)IRQn) & 0xFUL)-4UL] = (uint8_t)((priority << (8U - __NVIC_PRIO_BITS)) & (uint32_t)0xFFUL);
+  }
+}
+
+void enableFPU(void)
+{
+    // Enable CP10 and CP11 coprocessors
+    SCB->CPACR |= ((3UL << 10*2) | (3UL << 11*2));  // Set CP10 and CP11 to full access
+    
+    // Or using CMSIS
+    // SCB_CPACR_ENABLE_FPU();
 }

@@ -12,7 +12,7 @@
 
 #define LED_YELLOW  2
 #define LED_RED    13
-#define LED_BLUE    1
+#define LED_BLUE    3
 
 
 typedef struct {
@@ -33,5 +33,6 @@ extern led red_led;
 void led_init(led *ledX);
 void led_on(led *ledX);
 void led_off(led *ledX);
+void led_toggle(led *ledX);
 
 #endif /* LED_H_ */

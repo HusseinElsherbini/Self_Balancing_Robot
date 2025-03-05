@@ -34,5 +34,5 @@ void sw_hw_init(void){
 
     SBUS_init(&sbusHandle , &sbusUart);
 
-    ADC_Init_With_Timer_DMA(system_sensors.port_config, TIM4);
+    ADC_Init_With_Timer_DMA(system_sensors.port_config, TIM2);
 }

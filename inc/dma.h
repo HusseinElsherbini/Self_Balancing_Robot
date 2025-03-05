@@ -668,37 +668,35 @@ typedef enum
 /** 
   * @brief  DMA handle Structure definition
   */
-typedef struct DMA_HandleTypeDef
-{
-  DMA_Stream_TypeDef         *Instance;                                                        /*!< Register base address                  */
 
-  DMA_InitTypeDef            Init;                                                             /*!< DMA communication parameters           */ 
+  typedef struct DMA_HandleTypeDef
+  {
+    DMA_Stream_TypeDef         *Instance;
+    DMA_InitTypeDef            Init;
+    uint32_t                   Lock;
+    __IO DMA_StateTypeDef      State;
+    void                       *Parent;
+    
+    // New callback pointers
+    void                       (* TC_Callback)( struct DMA_HandleTypeDef * hdma, void *userData);
+    void                       (* HT_Callback)( struct DMA_HandleTypeDef * hdma, void *userData);
+    void                       (* TE_Callback)( struct DMA_HandleTypeDef * hdma, void *userData);
+    void*                      UserData;  // User context data
+    
+    // Existing fields
+    void                       (* XferCpltCallback)( struct DMA_HandleTypeDef * hdma);
+    void                       (* XferHalfCpltCallback)( struct DMA_HandleTypeDef * hdma);
+    void                       (* XferM1CpltCallback)( struct DMA_HandleTypeDef * hdma);
+    void                       (* XferM1HalfCpltCallback)( struct DMA_HandleTypeDef * hdma);
+    void                       (* XferErrorCallback)( struct DMA_HandleTypeDef * hdma);
+    void                       (* XferAbortCallback)( struct DMA_HandleTypeDef * hdma);
+    __IO uint32_t              ErrorCode;
+    uint32_t                   StreamBaseAddress;
+    uint32_t                   StreamIndex;
+   
+  } DMA_HandleTypeDef;
 
-  uint32_t            Lock;                                                                    /*!< DMA locking object                     */  
 
-  __IO DMA_StateTypeDef  State;                                                            /*!< DMA transfer state                     */
-
-  void                       *Parent;                                                          /*!< Parent object state                    */ 
-
-  void                       (* XferCpltCallback)( struct __DMA_HandleTypeDef * hdma);         /*!< DMA transfer complete callback         */
-
-  void                       (* XferHalfCpltCallback)( struct __DMA_HandleTypeDef * hdma);     /*!< DMA Half transfer complete callback    */
-
-  void                       (* XferM1CpltCallback)( struct __DMA_HandleTypeDef * hdma);       /*!< DMA transfer complete Memory1 callback */
-  
-  void                       (* XferM1HalfCpltCallback)( struct __DMA_HandleTypeDef * hdma);   /*!< DMA transfer Half complete Memory1 callback */
-  
-  void                       (* XferErrorCallback)( struct __DMA_HandleTypeDef * hdma);        /*!< DMA transfer error callback            */
-  
-  void                       (* XferAbortCallback)( struct __DMA_HandleTypeDef * hdma);        /*!< DMA transfer Abort callback            */  
-
-  __IO uint32_t              ErrorCode;                                                        /*!< DMA Error code                          */
-  
-  uint32_t                   StreamBaseAddress;                                                /*!< DMA Stream Base Address                */
-
-  uint32_t                   StreamIndex;                                                      /*!< DMA Stream Index                       */
- 
-}DMA_HandleTypeDef;
 
 #define DMA_PERIPH_TO_MEMORY          0x00000000U                 /*!< Peripheral to memory direction */
 #define DMA_MEMORY_TO_PERIPH          ((uint32_t)DMA_SxCR_DIR_0)  /*!< Memory to peripheral direction */
@@ -753,6 +751,13 @@ typedef struct DMA_HandleTypeDef
 extern DMA_HandleTypeDef hdma_spi1_rx;
 
 extern DMA_HandleTypeDef hdma_spi1_tx;
+
+// Function to register callbacks for a specific DMA stream
+StatusTypeDef DMA_RegisterCallbacks(DMA_HandleTypeDef *hdma, 
+                          DMA_HandleTypeDef TC_Callback,
+                          DMA_HandleTypeDef HT_Callback,
+                          DMA_HandleTypeDef TE_Callback,
+                          void* UserData);
 
 StatusTypeDef DMA_Init(DMA_HandleTypeDef *hdma);
 static uint32_t DMA_CalcBaseAndBitshift(DMA_HandleTypeDef *hdma);

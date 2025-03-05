@@ -76,6 +76,7 @@ void DMA2_Stream0_IRQHandler(void)
         // Clear error flags
         DMA2->LIFCR = DMA_LIFCR_CTEIF0 | DMA_LIFCR_CDMEIF0 | DMA_LIFCR_CFEIF0;
     }
+    system_sensors.dma_channel->XferCpltCallback(system_sensors.dma_channel);
     DEBUG_ISR_EXIT();
 }
 

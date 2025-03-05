@@ -13,6 +13,14 @@
 #define RCC_APB1ENR_TIM2EN_Msk             (0x1UL << RCC_APB1ENR_TIM2EN_Pos)    /*!< 0x00000001 */
 #define RCC_APB1ENR_TIM2EN                 RCC_APB1ENR_TIM2EN_Msk          /*!< TIM2 clock enable */
 
+#define RCC_APB1ENR_TIM3EN_Pos             (1U)
+#define RCC_APB1ENR_TIM3EN_Msk             (0x1UL << RCC_APB1ENR_TIM3EN_Pos)    /*!< 0x00000002 */
+#define RCC_APB1ENR_TIM3EN                 RCC_APB1ENR_TIM3EN_Msk          /*!< TIM3 clock enable */
+
+#define RCC_APB1ENR_TIM4EN_Pos             (2U)
+#define RCC_APB1ENR_TIM4EN_Msk             (0x1UL << RCC_APB1ENR_TIM4EN_Pos)    /*!< 0x00000004 */      
+#define RCC_APB1ENR_TIM4EN                 RCC_APB1ENR_TIM4EN_Msk          /*!< TIM4 clock enable */
+
 typedef struct 
 {
     volatile uint32_t CR1;           

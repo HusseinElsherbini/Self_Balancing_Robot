@@ -4,6 +4,59 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+
+
+// Global registry to track callbacks for each DMA stream
+// First index: DMA controller (0=DMA1, 1=DMA2)
+// Second index: Stream number (0-7)
+static struct {
+  DMA_HandleTypeDef* Handle;
+} DMA_HandleRegistry[2][8] = {0};
+
+
+StatusTypeDef DMA_RegisterCallbacks(DMA_HandleTypeDef *hdma, 
+  void (*TC_Callback)(DMA_HandleTypeDef *hdma, void *userData),
+  void (*HT_Callback)(DMA_HandleTypeDef *hdma, void *userData),
+  void (*TE_Callback)(DMA_HandleTypeDef *hdma, void *userData),
+  void *userData)
+{
+  if (hdma == NULL) {
+  return SYS_ERROR;
+  }
+
+  uint8_t controllerIndex, streamIndex;
+  DMA_GetIndices(hdma->Instance, &controllerIndex, &streamIndex);
+
+  // Store the callbacks
+  hdma->TC_Callback = TC_Callback;
+  hdma->HT_Callback = HT_Callback;
+  hdma->TE_Callback = TE_Callback;
+  hdma->UserData = userData;
+
+  // Register the handle
+  DMA_HandleRegistry[controllerIndex][streamIndex].Handle = hdma;
+
+  return SYS_OK;
+}
+// Get the indices for controller and stream
+void DMA_GetIndices(DMA_Stream_TypeDef* Instance, uint8_t* ControllerIndex, uint8_t* StreamIndex)
+{
+    uint32_t instanceAddr = (uint32_t)Instance;
+    
+    // Determine which DMA controller (1 or 2)
+    if (instanceAddr >= DMA2_BASE) {
+        *ControllerIndex = 1;  // DMA2
+    } else {
+        *ControllerIndex = 0;  // DMA1
+    }
+    
+    // Calculate stream index (0-7)
+    uint32_t baseAddr = (*ControllerIndex == 1) ? DMA2_BASE : DMA1_BASE;
+    uint32_t streamOffset = instanceAddr - baseAddr;
+    
+    // Each stream is 0x18 bytes apart, starting at offset 0x10
+    *StreamIndex = (streamOffset - 0x10) / 0x18;
+}
 static uint32_t DMA_CalcBaseAndBitshift(DMA_HandleTypeDef *hdma)
 {
   uint32_t stream_number = (((uint32_t)hdma->Instance & 0xFFU) - 16U) / 24U;

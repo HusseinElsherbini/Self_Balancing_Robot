@@ -96,7 +96,7 @@ BALANCING_TASK_STATE_t robotBalance(BalancingTaskData_t *balancingTaskData){
             
             // Convert PID output to PWM, accounting for deadband
             float adjustedOutput = abs(balancingTaskData->pidOutput) - MOTOR_DEADBAND;
-            pwmValue = fabs(balancingTaskData->pidOutput);
+            pwmValue = fabs(adjustedOutput);
         }
         // For debugging - direct view of values
         #if DEBUG_PRINT_PID
@@ -109,8 +109,8 @@ BALANCING_TASK_STATE_t robotBalance(BalancingTaskData_t *balancingTaskData){
         balancingTaskData->motorB.pwm_ch.dutyCycle = pwmValue;
 
         // Update motor PWM values
-        //actuateMotor(&xMotorAHandle, motorDirection, balancingTaskData->motorA.pwm_ch.dutyCycle);
-        //actuateMotor(&xMotorBHandle, motorDirection, balancingTaskData->motorB.pwm_ch.dutyCycle);
+        actuateMotor(&xMotorAHandle, motorDirection, balancingTaskData->motorA.pwm_ch.dutyCycle);
+        actuateMotor(&xMotorBHandle, motorDirection, balancingTaskData->motorB.pwm_ch.dutyCycle);
         
     }
     else{

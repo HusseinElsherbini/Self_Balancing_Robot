@@ -36,12 +36,12 @@ MotorHandle_t xMotorAHandle = {
 };
 
 MotorHandle_t xMotorBHandle = {
-    .in1.gpioPort = GPIOC,
-    .in1.pin = 6,
-    .in1.port_base_addr = (GPIO_REGS_t *)GPIOC_PERIPH_BASE,
-    .in2.gpioPort = GPIOC,
-    .in2.pin = 9,
-    .in2.port_base_addr = (GPIO_REGS_t *)GPIOC_PERIPH_BASE,
+    .in1.gpioPort = GPIOA,
+    .in1.pin = 8,
+    .in1.port_base_addr = (GPIO_REGS_t *)GPIOA_PERIPH_BASE,
+    .in2.gpioPort = GPIOB,
+    .in2.pin = 2,
+    .in2.port_base_addr = (GPIO_REGS_t *)GPIOB_PERIPH_BASE,
     .hall_effect_sensor.channelA.gpioPort = GPIOA,
     .hall_effect_sensor.channelA.pin = 6,
     .hall_effect_sensor.channelA.gpioPort = GPIOA,

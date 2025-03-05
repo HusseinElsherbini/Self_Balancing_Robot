@@ -30,9 +30,12 @@ int main(void)
 	sw_hw_init();
 	
 	// stop motors
-	actuateMotor(&xMotorBHandle, MOTOR_STOP, (uint32_t)0);
-	actuateMotor(&xMotorAHandle, MOTOR_STOP , (uint32_t)0);
+	actuateMotor(&xMotorAHandle, MOTOR_STOP, (uint32_t)0);
+	actuateMotor(&xMotorBHandle, MOTOR_STOP , (uint32_t)0);
     
+    while(1){
+        //asm("nop");
+    };
 	// moving to TIM5 as main timer
 	disable_systick_timer();
 
